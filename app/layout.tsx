@@ -1,4 +1,5 @@
 import { Caveat, Geist, Geist_Mono, Libre_Baskerville } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -37,6 +38,7 @@ export default function RootLayout({
       )}
     >
       <body>
+        <Analytics />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
