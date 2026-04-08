@@ -1,6 +1,22 @@
+"use client"
+
 import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
+import { motion } from "motion/react"
 import Image from "next/image"
 import Link from "next/link"
+
+const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18, filter: "blur(12px)" },
+  visible: { opacity: 1, y: 0, filter: "blur(0px)" },
+}
+
+const transition = (delay: number) => ({
+  duration: 1.3,
+  delay,
+  ease,
+})
 
 export default function Page() {
   return (
@@ -9,14 +25,26 @@ export default function Page() {
         <section className="px-6 sm:px-10 md:px-16 lg:px-20">
           <div className="flex max-w-lg flex-col gap-8 text-base">
             <div className="flex flex-col gap-4">
-              <h1 className="flex items-center gap-1.5 leading-relaxed">
+              <motion.h1
+                className="flex items-center gap-1.5 leading-relaxed"
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                transition={transition(0)}
+              >
                 <span className="font-medium">
                   <span className="text-muted-foreground">Ciao, I'm </span>
                   <span>Paolo</span>
                 </span>
-              </h1>
+              </motion.h1>
               <div className="flex flex-col gap-2 leading-relaxed">
-                <p className="text-muted-foreground">
+                <motion.p
+                  className="text-muted-foreground"
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="visible"
+                  transition={transition(0.15)}
+                >
                   I'm a 19 y/o{" "}
                   <span className="text-foreground"> software developer </span>{" "}
                   and{" "}
@@ -38,20 +66,27 @@ export default function Page() {
                     difference
                   </span>{" "}
                   – I like to make people feel something through my work.
-                </p>
-                <p className="items-center text-muted-foreground">
+                </motion.p>
+                <motion.p
+                  className="items-center text-muted-foreground"
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="visible"
+                  transition={transition(0.3)}
+                >
                   <span>I'm currently interning at </span>
                   <a
                     href="https://datapizza.tech/en/dualintelligence"
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                   >
-                    <Image
-                      src="/datapizza.png"
-                      width={1200}
-                      height={1200}
-                      alt="DataPizza"
-                      className="mr-1 mb-1 inline h-[0.9em] w-auto align-middle brightness-0"
-                    />
+                    <svg
+                      viewBox="0 0 210 210"
+                      xmlns="http://www.w3.org/2000/svg"
+                      aria-label="DataPizza"
+                      className="inline h-[1.1em] w-auto -translate-y-px fill-foreground align-middle"
+                    >
+                      <path d="M127.24 107.052L117.61 79.7398C117.243 78.6967 117.737 77.5226 118.747 77.0665C120.457 76.2894 122.197 75.5588 123.962 74.8788C124.195 74.7902 124.418 74.6972 124.651 74.6128C126.18 74.0384 127.721 73.5063 129.267 73.0164C130.331 72.6785 131.459 73.2487 131.83 74.3003L160.042 154.319L166.296 172.061C166.922 173.83 165.11 175.516 163.425 174.73L15.8926 105.937C14.8748 105.464 14.4229 104.256 14.8664 103.2C15.597 101.452 16.3657 99.7075 17.1681 97.9718C17.2737 97.7395 17.375 97.5072 17.4848 97.2707C18.4731 95.1464 19.512 93.0601 20.5805 91.0033C23.0004 86.3535 25.6231 81.8684 28.4316 77.5564C29.8675 75.3561 31.3541 73.2022 32.8829 71.0906C34.4329 68.9536 36.0293 66.8715 37.6721 64.8274C53.6826 44.94 73.9882 29.6686 96.4814 19.8114C98.8126 18.7936 101.161 17.8265 103.534 16.9269C105.266 16.2681 107.01 15.6388 108.763 15.0391C109.84 14.6717 111.001 15.2334 111.381 16.3061L115.82 28.8873L120.938 43.4027L125.314 55.8234C125.715 56.9552 125.09 58.2095 123.95 58.5812C122.476 59.0627 121.006 59.5737 119.541 60.1227C119.308 60.2114 119.089 60.3043 118.856 60.3888C116.47 61.301 114.126 62.2935 111.833 63.3577C97.2711 70.1277 84.5337 79.9426 74.326 92.1436C73.0928 93.6176 71.8934 95.1295 70.7362 96.671C70.0352 97.6044 68.7386 97.8071 67.8179 97.1229L58.9617 90.5219C58.0326 89.8293 57.8468 88.4863 58.5563 87.5403C59.705 86.0072 60.8875 84.5079 62.0996 83.034C73.7221 68.9029 88.2797 57.5211 104.957 49.6447C105.95 49.1759 106.427 48.0188 106.064 46.9883L102.348 36.4469C101.938 35.2898 100.637 34.745 99.5221 35.2602C80.1288 44.2558 63.2399 57.4536 49.8732 73.9159C48.2219 75.9473 46.617 78.0336 45.0755 80.1664C43.5467 82.2865 42.077 84.453 40.6538 86.6618C38.8251 89.5125 37.0851 92.4308 35.4465 95.4251C34.8552 96.5063 35.2817 97.8535 36.3756 98.3645L136.89 145.235C138.575 146.02 140.387 144.335 139.762 142.565L138.968 140.314L127.235 107.043L127.24 107.052Z" />
+                    </svg>
                     DataPizza
                   </a>{" "}
                   <span>
@@ -74,9 +109,6 @@ export default function Page() {
                       aria-hidden="true"
                       fill="currentColor"
                     >
-                      {/* <path d="M 7.011 0.42 L 16.221 0.42 C 16.481 0.42 16.701 0.62 16.701 0.87 L 16.701 4.43 C 16.701 4.68 16.491 4.88 16.221 4.88 L 6.521 4.88 C 5.991 4.88 5.571 5.29 5.571 5.78 L 5.571 14.85 C 5.571 15.1 5.361 15.3 5.091 15.3 L 1.261 15.3 C 1.001 15.3 0.781 15.1 0.781 14.85 L 0.781 6.23 C 0.781 5.49 1.421 4.89 2.211 4.89 L 4.611 4.89 C 5.141 4.89 5.561 4.49 5.561 4 L 5.561 1.76 C 5.561 1.02 6.211 0.43 7.001 0.43 Z" />
-                      <path d="M 44.569 50.419 L 35.359 50.419 C 35.099 50.419 34.879 50.219 34.879 49.969 L 34.879 46.409 C 34.879 46.159 35.089 45.959 35.359 45.959 L 45.059 45.959 C 45.589 45.959 46.009 45.549 46.009 45.059 L 46.009 35.989 C 46.009 35.739 46.219 35.539 46.489 35.539 L 50.319 35.539 C 50.579 35.539 50.799 35.739 50.799 35.989 L 50.799 44.609 C 50.799 45.349 50.159 45.949 49.369 45.949 L 46.969 45.949 C 46.439 45.949 46.019 46.349 46.019 46.839 L 46.019 49.079 C 46.019 49.819 45.369 50.409 44.579 50.409 Z" />
-                      <path d="M 16.491 37.159 C 16.491 37.489 16.75 37.749 17.081 37.749 L 26.53 37.749 C 29.37 37.749 31.381 37.349 32.681 36.609 C 33.98 35.869 34.541 34.679 34.541 32.969 C 34.541 29.279 32.3 27.659 27.221 27.659 L 17.851 27.659 C 17.101 27.659 16.48 28.269 16.48 29.029 L 16.48 37.169 Z M 16.491 26.279 L 16.491 24.909 C 16.491 24.149 15.87 23.529 15.111 23.529 L 12.71 23.529 C 12.171 23.529 11.73 23.089 11.73 22.549 L 11.73 11.339 C 11.73 10.799 12.171 10.359 12.71 10.359 L 28.11 10.359 C 34.681 10.359 38.321 13.209 38.321 18.349 C 38.321 20.869 37.261 23.189 34.3 24.779 C 33.91 24.989 33.961 25.539 34.38 25.679 C 38.141 26.909 39.581 29.679 39.581 32.839 C 39.581 39.119 35.8 41.819 27.651 41.819 L 12.72 41.819 C 12.181 41.819 11.741 41.379 11.741 40.839 L 11.741 28.639 C 11.741 28.099 12.181 27.659 12.72 27.659 L 15.12 27.659 C 15.88 27.659 16.5 27.039 16.5 26.279 Z M 16.491 22.159 C 16.491 22.909 17.101 23.529 17.861 23.529 L 26.111 23.529 C 28.861 23.529 30.771 23.179 31.891 22.479 C 33.011 21.779 33.571 20.589 33.571 18.919 C 33.571 15.709 31.661 14.349 27.141 14.349 L 17.081 14.349 C 16.751 14.349 16.491 14.609 16.491 14.939 Z" /> */}
                       <path d="M 30.271 22.42 L 42.161 22.42 C 42.511 22.42 42.781 22.7 42.781 23.04 L 42.781 27.9 C 42.781 28.24 42.501 28.52 42.161 28.52 L 29.761 28.52 C 29.071 28.53 28.511 29.09 28.511 29.78 L 28.511 42.18 C 28.511 42.53 28.231 42.8 27.891 42.8 L 23.011 42.8 C 22.661 42.8 22.391 42.52 22.391 42.18 L 22.391 30.28 C 22.391 29.31 23.171 28.53 24.141 28.53 L 27.281 28.53 C 27.971 28.53 28.531 27.97 28.531 27.28 L 28.531 24.15 C 28.541 23.19 29.321 22.41 30.291 22.41 Z"></path>
                       <path d="M 20.611 28.55 L 8.722 28.55 C 8.372 28.55 8.102 28.27 8.102 27.93 L 8.102 23.07 C 8.102 22.73 8.382 22.45 8.722 22.45 L 21.122 22.45 C 21.812 22.44 22.372 21.88 22.372 21.19 L 22.372 8.79 C 22.372 8.44 22.651 8.17 22.991 8.17 L 27.872 8.17 C 28.222 8.17 28.491 8.45 28.491 8.79 L 28.491 20.69 C 28.491 21.66 27.712 22.44 26.741 22.44 L 23.602 22.44 C 22.912 22.44 22.352 23 22.352 23.69 L 22.352 26.82 C 22.342 27.78 21.562 28.56 20.592 28.56 Z"></path>
                       <path d="M 0.43 42.59 L 0.43 30.71 C 0.43 30.36 0.71 30.09 1.05 30.09 L 5.91 30.09 C 6.25 30.09 6.53 30.37 6.53 30.71 L 6.53 43.1 C 6.54 43.79 7.1 44.35 7.79 44.35 L 20.2 44.35 C 20.55 44.35 20.82 44.63 20.82 44.97 L 20.82 49.85 C 20.82 50.2 20.54 50.47 20.2 50.47 L 8.29 50.47 C 7.32 50.47 6.54 49.69 6.54 48.72 L 6.54 45.58 C 6.54 44.89 5.98 44.33 5.29 44.33 L 2.15 44.33 C 1.19 44.32 0.41 43.54 0.41 42.57 Z"></path>
@@ -88,8 +120,14 @@ export default function Page() {
                   </a>{" "}
                   , a Bocconi student association focused on AI and
                   Neuroscience, where I co-manage the Analysis Division.
-                </p>
-                <p className="items-center text-muted-foreground">
+                </motion.p>
+                <motion.p
+                  className="items-center text-muted-foreground"
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="visible"
+                  transition={transition(0.45)}
+                >
                   <span>Here you can checkout my </span>
                   <Link href="/projects">
                     <span className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground">
@@ -136,7 +174,7 @@ export default function Page() {
                     </a>
                     .
                   </span>
-                </p>
+                </motion.p>
               </div>
             </div>
           </div>
