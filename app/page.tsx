@@ -141,10 +141,10 @@ export default function Page() {
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       <Image
-                        src="/linkedin.png"
-                        width={1000}
-                        height={1000}
-                        alt="DataPizza"
+                        src="/linkedin.svg"
+                        width={72}
+                        height={72}
+                        alt="LinkedIn"
                         className="mr-1 mb-1 inline h-[1em] w-auto align-middle"
                       />
                       LinkedIn
