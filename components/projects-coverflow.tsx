@@ -181,6 +181,7 @@ export function ProjectsCoverflow() {
     startX: number
     startPlayhead: number
   } | null>(null)
+  const didDragRef = useRef(false)
   const wheelAccumulator = useRef(0)
   const lastWheelTime = useRef(0)
   const ignoreWheelUntil = useRef(0)
@@ -380,6 +381,7 @@ export function ProjectsCoverflow() {
     (e: React.PointerEvent<HTMLDivElement>) => {
       if (e.pointerType === "mouse" && e.button !== 0) return
 
+      didDragRef.current = false
       dragState.current = {
         pointerId: e.pointerId,
         startX: e.clientX,
@@ -401,6 +403,9 @@ export function ProjectsCoverflow() {
       e.preventDefault()
       const pixelsPerCard = Math.max(220, stackStep * 0.78)
       const diff = drag.startX - e.clientX
+      if (Math.abs(diff) > 6) {
+        didDragRef.current = true
+      }
       syncPlayhead(drag.startPlayhead + diff / pixelsPerCard)
     },
     [stackStep, syncPlayhead]
@@ -546,8 +551,14 @@ export function ProjectsCoverflow() {
                     href={project.href}
                     aria-label={`Open ${project.title}`}
                     className="group block"
-                    onPointerDown={(e) => e.stopPropagation()}
+                    onDragStart={(e) => e.preventDefault()}
                     onClick={(e) => {
+                      if (didDragRef.current) {
+                        e.preventDefault()
+                        didDragRef.current = false
+                        return
+                      }
+
                       if (isFocusedProject) return
 
                       e.preventDefault()
@@ -568,25 +579,26 @@ export function ProjectsCoverflow() {
                         src={project.image}
                         alt={project.title}
                         fill
+                        draggable={false}
                         className="absolute inset-0 h-full w-full object-cover"
                         style={imageStyle}
                         sizes="(max-width: 768px) 80vw, (max-width: 1024px) 480px, (max-width: 1280px) 45vw, 50vw"
                         priority={index === 0}
                       />
                       <div className="absolute inset-0" style={overlayStyle} />
-                      <div
+                      {/* <div
                         className={cn(
-                          "group/meta pointer-events-auto absolute inset-x-[12px] bottom-[12px] flex translate-y-2 items-center justify-between gap-3 rounded-[12px] border border-white/10 bg-[linear-gradient(90deg,rgba(9,9,9,0.92),rgba(15,15,15,0.84))] py-4 pr-4 pl-6 text-white opacity-0 shadow-[0_16px_32px_rgba(0,0,0,0.22)] transition-all duration-200 ease-out md:translate-y-2 md:opacity-0",
+                          "group/meta pointer-events-auto absolute inset-x-[12px] bottom-[12px] flex translate-y-2 items-center justify-between gap-3 rounded-[12px] border border-white/10 bg-black/75 py-4 pr-4 pl-6 text-white opacity-0 shadow-[0_16px_32px_rgba(0,0,0,0.22)] transition-all duration-200 ease-out md:translate-y-2 md:opacity-0",
                           showCompactMeta && "translate-y-0 opacity-100",
                           revealMetaOnHover &&
                             "md:group-hover:translate-y-0 md:group-hover:opacity-100 md:group-focus-visible:translate-y-0 md:group-focus-visible:opacity-100"
                         )}
                       >
-                        <div className="flex min-w-0 flex-col gap-1">
-                          <div className="truncate text-lg leading-none tracking-[-0.055em]">
+                        <div className="flex min-w-0 flex-col gap-px">
+                          <div className="truncate text-lg">
                             {project.title}
                           </div>
-                          <div className="truncate font-mono text-xs tracking-[0.08em] text-white/58">
+                          <div className="truncate font-mono text-xs text-white/58">
                             {getProjectLinkLabel(project.href)}
                           </div>
                         </div>
@@ -612,7 +624,7 @@ export function ProjectsCoverflow() {
                             />
                           </svg>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </a>
                 </div>
