@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import { Caveat, Geist, Geist_Mono, Libre_Baskerville } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 
@@ -19,6 +20,10 @@ const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://paolo.sh"),
+}
 
 export default function RootLayout({
   children,
