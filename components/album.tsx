@@ -61,7 +61,7 @@ const TRACKS: Track[] = [
   },
   {
     n: 6,
-    title: "Sellas Freestyle — New Intro",
+    title: "Sellas Freestyle",
     file: "/album/06-sellas-freestyle-new-intro.m4a",
     duration: 126,
   },
