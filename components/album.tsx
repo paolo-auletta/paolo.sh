@@ -11,13 +11,17 @@ import {
   type CSSProperties,
 } from "react"
 
+import { TextScramble } from "@/components/motion-primitives/text-scramble"
 import { cn } from "@/lib/utils"
 
 const COVER_SRC = "/album/cover.jpg"
 const ALBUM_TITLE_GREEK = "άλμπουμ σιωπηλός"
 const ALBUM_TITLE_LATIN = "Album Silente"
+const ALBUM_TITLE_LATIN_DESKTOP = "Album\nSilente"
+const ALBUM_ARTISTS = "Lupo Lucio Battisti, Little Tonio Cartonio"
 const ALBUM_YEAR = "2025"
 const ALBUM_GENRE = "Greek Hip-Hop"
+const ALBUM_TITLE_SWAP_INTERVAL = 3000
 
 type Track = {
   n: number
@@ -94,6 +98,82 @@ function formatTotalRuntime(total: number) {
   return `${m} min ${s}s`
 }
 
+function isEditableTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return (
+    target.isContentEditable ||
+    target.closest('input, textarea, select, [contenteditable="true"]') !== null
+  )
+}
+
+function AlbumTitleSwitcher() {
+  const [showLatinTitle, setShowLatinTitle] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [isMobileLayout, setIsMobileLayout] = useState(() => {
+    if (typeof window === "undefined") return false
+    return window.matchMedia("(max-width: 639px)").matches
+  })
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 639px)")
+    const updateIsMobileLayout = (event?: MediaQueryListEvent) => {
+      setIsMobileLayout(event?.matches ?? mediaQuery.matches)
+    }
+
+    updateIsMobileLayout()
+    mediaQuery.addEventListener("change", updateIsMobileLayout)
+
+    return () =>
+      mediaQuery.removeEventListener("change", updateIsMobileLayout)
+  }, [])
+
+  const shouldAnimate = isMobileLayout || isHovered
+  const currentTitle =
+    shouldAnimate && showLatinTitle
+      ? isMobileLayout
+        ? ALBUM_TITLE_LATIN
+        : ALBUM_TITLE_LATIN_DESKTOP
+      : ALBUM_TITLE_GREEK
+
+  useEffect(() => {
+    if (!shouldAnimate) return
+
+    const intervalId = window.setInterval(() => {
+      setShowLatinTitle((value) => !value)
+    }, ALBUM_TITLE_SWAP_INTERVAL)
+
+    return () => window.clearInterval(intervalId)
+  }, [shouldAnimate])
+
+  const handlePointerEnter = () => {
+    if (isMobileLayout) return
+    setIsHovered(true)
+    setShowLatinTitle(true)
+  }
+
+  return (
+    <div
+      className="-mx-4 -my-3 w-fit rounded-2xl px-4 py-3"
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={() => {
+        if (isMobileLayout) return
+        setIsHovered(false)
+        setShowLatinTitle(false)
+      }}
+    >
+      <TextScramble
+        as="h1"
+        trigger={showLatinTitle}
+        duration={0.75}
+        speed={0.035}
+        className="font-serif whitespace-nowrap sm:whitespace-pre-line text-[2rem] leading-[1.05] sm:text-[2.4rem] md:text-[2.6rem]"
+      >
+        {currentTitle}
+      </TextScramble>
+    </div>
+  )
+}
+
 export function Album() {
   const playable = useMemo(() => TRACKS.filter((t) => t.file), [])
   const totalDuration = useMemo(
@@ -102,6 +182,7 @@ export function Album() {
   )
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
   const [currentIndex, setCurrentIndex] = useState<number | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -111,12 +192,26 @@ export function Album() {
 
   const currentTrack =
     currentIndex !== null ? (playable[currentIndex] ?? null) : null
+  const selectedTrack =
+    selectedIndex !== null ? (playable[selectedIndex] ?? null) : null
+
+  const selectTrack = useCallback(
+    (track: Track) => {
+      if (!track.file) return
+      const idx = playable.findIndex((t) => t.n === track.n)
+      if (idx === -1) return
+      setSelectedIndex(idx)
+    },
+    [playable]
+  )
 
   const playIndex = useCallback(
     (index: number) => {
       if (index < 0 || index >= playable.length) return
       const audio = audioRef.current
       if (!audio) return
+
+      setSelectedIndex(index)
 
       if (currentIndex === index) {
         if (audio.paused) {
@@ -149,12 +244,16 @@ export function Album() {
   )
 
   const playFirst = useCallback(() => {
-    if (currentIndex === null) {
-      playIndex(0)
-    } else {
+    if (currentIndex !== null) {
       playIndex(currentIndex)
+      return
     }
-  }, [currentIndex, playIndex])
+    if (selectedIndex !== null) {
+      playIndex(selectedIndex)
+      return
+    }
+    playIndex(0)
+  }, [currentIndex, playIndex, selectedIndex])
 
   const next = useCallback(() => {
     if (currentIndex === null) return
@@ -207,6 +306,23 @@ export function Album() {
     if (audio) audio.muted = muted
   }, [muted])
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== " " && event.code !== "Space") return
+      if (event.repeat || event.metaKey || event.ctrlKey || event.altKey) return
+      if (isEditableTarget(event.target)) return
+
+      const targetIndex = currentIndex ?? selectedIndex
+      if (targetIndex === null) return
+
+      event.preventDefault()
+      playIndex(targetIndex)
+    }
+
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [currentIndex, playIndex, selectedIndex])
+
   const seekTo = (value: number) => {
     const audio = audioRef.current
     if (!audio) return
@@ -247,15 +363,17 @@ export function Album() {
             transition={transition(0.7)}
             className="mt-12"
           >
-            <TrackList
+          <TrackList
               tracks={TRACKS}
+              selectedTrack={selectedTrack}
               currentTrack={currentTrack}
               isPlaying={isPlaying}
+              onSelect={selectTrack}
               onToggle={togglePlayTrack}
             />
           </motion.div>
 
-          <motion.div
+          {/* <motion.div
             variants={fadeUp}
             initial="hidden"
             animate="visible"
@@ -263,7 +381,7 @@ export function Album() {
             className="mt-16"
           >
             <Credits />
-          </motion.div>
+          </motion.div> */}
         </div>
       </main>
 
@@ -332,24 +450,23 @@ function AlbumHero({
 
       {/* Meta */}
       <div className="flex flex-col justify-center gap-3">
-        <div className="flex flex-col gap-0.5">
-          <motion.h1
+        <div className="flex flex-col gap-4.5">
+          <motion.div
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             transition={transition(0.12)}
-            className="font-serif text-[2rem] leading-[1.05] sm:text-[2.4rem] md:text-[2.6rem]"
           >
-            {ALBUM_TITLE_GREEK}
-          </motion.h1>
+            <AlbumTitleSwitcher />
+          </motion.div>
           <motion.p
             variants={fadeUp}
             initial="hidden"
             animate="visible"
             transition={transition(0.2)}
-            className="text-base text-muted-foreground sm:text-lg"
+            className="text-base text-muted-foreground"
           >
-            {ALBUM_TITLE_LATIN}
+            {ALBUM_ARTISTS}
           </motion.p>
         </div>
 
@@ -364,7 +481,9 @@ function AlbumHero({
           <Dot />
           <span>{ALBUM_YEAR}</span>
           <Dot />
-          <span>6 tracks · {totalRuntime}</span>
+          <span>6 tracks</span>
+          <Dot />
+          <span>{totalRuntime}</span>
         </motion.div>
 
         <motion.p
@@ -391,7 +510,7 @@ function AlbumHero({
             className="group inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-all hover:gap-3 hover:opacity-90"
           >
             {isPlaying ? <PauseIcon /> : <PlayIcon />}
-            <span>{isPlaying ? "Pause" : "Play album"}</span>
+            <span>{isPlaying ? "Pause" : "Play Album"}</span>
           </button>
           <DownloadAllButton />
         </motion.div>
@@ -442,25 +561,32 @@ function Dot() {
 
 function TrackList({
   tracks,
+  selectedTrack,
   currentTrack,
   isPlaying,
+  onSelect,
   onToggle,
 }: {
   tracks: Track[]
+  selectedTrack: Track | null
   currentTrack: Track | null
   isPlaying: boolean
+  onSelect: (track: Track) => void
   onToggle: (track: Track) => void
 }) {
   return (
     <ol className="flex flex-col">
       {tracks.map((track) => {
-        const active = currentTrack?.n === track.n
+        const selected = selectedTrack?.n === track.n
+        const current = currentTrack?.n === track.n
         return (
           <TrackRow
             key={track.n}
             track={track}
-            active={active}
-            isPlaying={active && isPlaying}
+            selected={selected}
+            current={current}
+            isPlaying={current && isPlaying}
+            onSelect={onSelect}
             onToggle={onToggle}
           />
         )
@@ -471,24 +597,46 @@ function TrackList({
 
 function TrackRow({
   track,
-  active,
+  selected,
+  current,
   isPlaying,
+  onSelect,
   onToggle,
 }: {
   track: Track
-  active: boolean
+  selected: boolean
+  current: boolean
   isPlaying: boolean
+  onSelect: (track: Track) => void
   onToggle: (track: Track) => void
 }) {
   const locked = track.locked
+  const handleRowClick = () => {
+    if (locked) return
+    if (current && isPlaying && selected) {
+      onToggle(track)
+      return
+    }
+    onSelect(track)
+  }
+
+  const handleRowDoubleClick = () => {
+    if (locked || isPlaying) return
+    onToggle(track)
+  }
+
   return (
     <li
       className={cn(
         "group relative grid grid-cols-[2rem_1fr_auto] items-center gap-3 border-b border-border/60 py-3.5 pr-2 pl-1 transition-colors first:border-t sm:pr-4",
         locked
           ? "text-muted-foreground/60"
-          : "text-foreground hover:bg-muted/40"
+          : selected
+            ? "bg-muted/50 text-foreground"
+            : "text-foreground hover:bg-muted/40"
       )}
+      onClick={handleRowClick}
+      onDoubleClick={handleRowDoubleClick}
     >
       {/* Number / playing indicator / play button */}
       <div className="flex items-center justify-center">
@@ -499,8 +647,12 @@ function TrackRow({
         ) : (
           <button
             type="button"
-            onClick={() => onToggle(track)}
-            className="relative flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
+            onClick={(event) => {
+              event.stopPropagation()
+              onToggle(track)
+            }}
+            onDoubleClick={(event) => event.stopPropagation()}
+            className="group/track-control relative flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground"
             aria-label={
               isPlaying ? `Pause ${track.title}` : `Play ${track.title}`
             }
@@ -509,7 +661,7 @@ function TrackRow({
               className={cn(
                 "font-mono text-xs transition-opacity",
                 "group-hover:opacity-0",
-                active && "opacity-0"
+                current && "opacity-0"
               )}
             >
               {String(track.n).padStart(2, "0")}
@@ -518,10 +670,21 @@ function TrackRow({
               className={cn(
                 "absolute inset-0 flex items-center justify-center opacity-0 transition-opacity",
                 "group-hover:opacity-100",
-                active && "opacity-100"
+                current && "opacity-100"
               )}
             >
-              {isPlaying ? <BarsIcon animated /> : <PlayIcon size={12} />}
+              {isPlaying ? (
+                <>
+                  <span className="transition-opacity group-hover/track-control:opacity-0">
+                    <BarsIcon animated />
+                  </span>
+                  <span className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover/track-control:opacity-100">
+                    <PauseIcon size={11} />
+                  </span>
+                </>
+              ) : (
+                <PlayIcon size={12} />
+              )}
             </span>
           </button>
         )}
@@ -532,7 +695,7 @@ function TrackRow({
         <span
           className={cn(
             "truncate text-[15px]",
-            active && "font-medium text-amber-700 dark:text-amber-400"
+            selected && "font-medium text-amber-700 dark:text-amber-400"
           )}
         >
           {track.title}
