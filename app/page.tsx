@@ -18,6 +18,11 @@ const transition = (delay: number) => ({
   ease,
 })
 
+const externalLinkProps = {
+  target: "_blank",
+  rel: "noreferrer",
+} as const
+
 export default function Page() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [teaserHeight, setTeaserHeight] = useState(112)
@@ -44,9 +49,9 @@ export default function Page() {
 
   return (
     <div className="relative flex min-h-svh flex-col">
-      <div className="flex flex-1 flex-col items-center justify-center">
-        <section className="px-6 sm:px-10 md:px-16 lg:px-20">
-          <div className="flex max-w-xl flex-col gap-8 text-base">
+      <div className="flex flex-1 flex-col items-center [justify-content:safe_center] py-10 sm:py-14 md:py-16">
+        <section className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
+          <div className="mx-auto flex max-w-xl flex-col gap-8 text-base">
             <div className="relative flex flex-col gap-4">
               <motion.div
                 className="relative h-24 w-24 overflow-hidden sm:h-26 sm:w-26 lg:absolute lg:top-1 lg:right-[calc(100%+1.5rem)]"
@@ -99,6 +104,7 @@ export default function Page() {
                   and{" "}
                   <a
                     href="https://www.unibocconi.it/en/programs/bachelor-science/economics-management-and-computer-science"
+                    {...externalLinkProps}
                     className="text-foreground"
                   >
                     {" "}
@@ -126,11 +132,12 @@ export default function Page() {
                   Recently, I&apos;ve been working at{" "}
                   <a
                     href="https://barcloud.com/"
+                    {...externalLinkProps}
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                   >
                     <span
                       aria-hidden="true"
-                      className="mr-1 inline-block h-[1em] w-[1.45em] -translate-y-px bg-current align-middle"
+                      className="mx-1 inline-block h-[1em] w-[1.45em] -translate-y-px bg-current align-middle"
                       style={{
                         WebkitMaskImage: "url('/barcloud.svg')",
                         WebkitMaskRepeat: "no-repeat",
@@ -147,11 +154,12 @@ export default function Page() {
                   , managing{" "}
                   <a
                     href="https://www.bainsa.xyz/"
+                    {...externalLinkProps}
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                   >
                     <svg
                       viewBox="0 0 51 51"
-                      className="mr-1 mb-1 inline h-[0.9em] w-auto align-middle"
+                      className="mx-1 mb-1 inline h-[0.9em] w-auto align-middle"
                       aria-hidden="true"
                       fill="currentColor"
                     >
@@ -179,6 +187,7 @@ export default function Page() {
                   You can reach me on{" "}
                   <a
                     href="https://www.linkedin.com/in/paoloauletta/"
+                    {...externalLinkProps}
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                   >
                     <Image
@@ -216,10 +225,10 @@ export default function Page() {
                   .
                 </span>
               </motion.p>
-              <div className="flex flex-col gap-2 leading-relaxed">
+              <div className="flex flex-col gap-4 leading-relaxed">
                 <motion.button
                   type="button"
-                  className="w-fit cursor-pointer font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+                  className="w-fit cursor-pointer text-sm font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
                   variants={fadeUp}
                   initial="hidden"
                   animate="visible"
@@ -268,6 +277,7 @@ export default function Page() {
                     </span>
                     <a
                       href="https://barcloud.com/"
+                      {...externalLinkProps}
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       BarCloud
@@ -279,6 +289,7 @@ export default function Page() {
                     </span>
                     <a
                       href="https://datapizza.tech/en"
+                      {...externalLinkProps}
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       <svg
@@ -296,6 +307,7 @@ export default function Page() {
                     </span>
                     <a
                       href="https://datapizza.tech/it/dualintelligence/"
+                      {...externalLinkProps}
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       DualOS
@@ -314,6 +326,7 @@ export default function Page() {
                     <span>I&apos;m also vice president of </span>
                     <a
                       href="https://www.bainsa.xyz/"
+                      {...externalLinkProps}
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       BAINSA
