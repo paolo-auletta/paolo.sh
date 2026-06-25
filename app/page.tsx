@@ -1,9 +1,9 @@
 "use client"
 
-import { TextShimmer } from "@/components/motion-primitives/text-shimmer"
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
 import Link from "next/link"
+import { useEffect, useRef, useState, type CSSProperties } from "react"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
@@ -19,6 +19,29 @@ const transition = (delay: number) => ({
 })
 
 export default function Page() {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [teaserHeight, setTeaserHeight] = useState(112)
+  const teaserRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const teaser = teaserRef.current
+
+    if (!teaser) {
+      return
+    }
+
+    const updateTeaserHeight = () => {
+      setTeaserHeight(teaser.getBoundingClientRect().height)
+    }
+
+    updateTeaserHeight()
+
+    const observer = new ResizeObserver(updateTeaserHeight)
+    observer.observe(teaser)
+
+    return () => observer.disconnect()
+  }, [])
+
   return (
     <div className="relative flex min-h-svh flex-col">
       <div className="flex flex-1 flex-col items-center justify-center">
@@ -26,7 +49,12 @@ export default function Page() {
           <div className="flex max-w-xl flex-col gap-8 text-base">
             <div className="relative flex flex-col gap-4">
               <motion.div
-                className="relative h-24 w-24 overflow-hidden sm:h-28 sm:w-28 lg:absolute lg:top-1 lg:-left-36"
+                className="relative h-24 w-24 overflow-hidden sm:h-26 sm:w-26 lg:absolute lg:top-1 lg:right-[calc(100%+1.5rem)]"
+                style={
+                  {
+                    "--portrait-size": `${teaserHeight}px`,
+                  } as CSSProperties
+                }
                 variants={fadeUp}
                 initial="hidden"
                 animate="visible"
@@ -37,23 +65,28 @@ export default function Page() {
                   alt="Portrait of Paolo"
                   fill
                   className="object-cover object-center"
-                  sizes="(min-width: 640px) 160px, 144px"
+                  sizes="(min-width: 1024px) 220px, (min-width: 640px) 112px, 96px"
                   priority
                 />
               </motion.div>
-              <motion.h1
-                className="flex items-center gap-1.5 leading-relaxed"
-                variants={fadeUp}
-                initial="hidden"
-                animate="visible"
-                transition={transition(0)}
+              <div
+                ref={teaserRef}
+                className="flex flex-col gap-2 leading-relaxed"
               >
-                <span className="font-medium">
-                  <span className="text-muted-foreground">Ciao, I&apos;m </span>
-                  <span>Paolo</span>
-                </span>
-              </motion.h1>
-              <div className="flex flex-col gap-2 leading-relaxed">
+                <motion.h1
+                  className="flex items-center gap-1.5"
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="visible"
+                  transition={transition(0)}
+                >
+                  <span className="font-medium">
+                    <span className="text-muted-foreground">
+                      Ciao, I&apos;m{" "}
+                    </span>
+                    <span>Paolo</span>
+                  </span>
+                </motion.h1>
                 <motion.p
                   className="text-muted-foreground"
                   variants={fadeUp}
@@ -88,9 +121,9 @@ export default function Page() {
                   variants={fadeUp}
                   initial="hidden"
                   animate="visible"
-                  transition={transition(0.3)}
+                  transition={transition(0.28)}
                 >
-                  <span>I&apos;m currently in Los Angeles, interning at </span>
+                  Recently, I&apos;ve been working at{" "}
                   <a
                     href="https://barcloud.com/"
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
@@ -110,53 +143,8 @@ export default function Page() {
                       }}
                     />
                     BarCloud
-                  </a>{" "}
-                  <span>
-                    as a Software Engineer, where I&apos;m building{" "}
-                    <TextShimmer
-                      duration={2}
-                      className="[--base-color:var(--muted-foreground)]"
-                    >
-                      frontier AI systems
-                    </TextShimmer>{" "}
-                    that automate complex workflows. Before that, I interned
-                    at{" "}
-                  </span>
-                  <a
-                    href="https://datapizza.tech/en"
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
-                  >
-                    <svg
-                      viewBox="0 0 210 210"
-                      xmlns="http://www.w3.org/2000/svg"
-                      aria-label="DataPizza"
-                      className="inline h-[1.1em] w-auto -translate-y-px fill-current align-middle"
-                    >
-                      <path d="M127.24 107.052L117.61 79.7398C117.243 78.6967 117.737 77.5226 118.747 77.0665C120.457 76.2894 122.197 75.5588 123.962 74.8788C124.195 74.7902 124.418 74.6972 124.651 74.6128C126.18 74.0384 127.721 73.5063 129.267 73.0164C130.331 72.6785 131.459 73.2487 131.83 74.3003L160.042 154.319L166.296 172.061C166.922 173.83 165.11 175.516 163.425 174.73L15.8926 105.937C14.8748 105.464 14.4229 104.256 14.8664 103.2C15.597 101.452 16.3657 99.7075 17.1681 97.9718C17.2737 97.7395 17.375 97.5072 17.4848 97.2707C18.4731 95.1464 19.512 93.0601 20.5805 91.0033C23.0004 86.3535 25.6231 81.8684 28.4316 77.5564C29.8675 75.3561 31.3541 73.2022 32.8829 71.0906C34.4329 68.9536 36.0293 66.8715 37.6721 64.8274C53.6826 44.94 73.9882 29.6686 96.4814 19.8114C98.8126 18.7936 101.161 17.8265 103.534 16.9269C105.266 16.2681 107.01 15.6388 108.763 15.0391C109.84 14.6717 111.001 15.2334 111.381 16.3061L115.82 28.8873L120.938 43.4027L125.314 55.8234C125.715 56.9552 125.09 58.2095 123.95 58.5812C122.476 59.0627 121.006 59.5737 119.541 60.1227C119.308 60.2114 119.089 60.3043 118.856 60.3888C116.47 61.301 114.126 62.2935 111.833 63.3577C97.2711 70.1277 84.5337 79.9426 74.326 92.1436C73.0928 93.6176 71.8934 95.1295 70.7362 96.671C70.0352 97.6044 68.7386 97.8071 67.8179 97.1229L58.9617 90.5219C58.0326 89.8293 57.8468 88.4863 58.5563 87.5403C59.705 86.0072 60.8875 84.5079 62.0996 83.034C73.7221 68.9029 88.2797 57.5211 104.957 49.6447C105.95 49.1759 106.427 48.0188 106.064 46.9883L102.348 36.4469C101.938 35.2898 100.637 34.745 99.5221 35.2602C80.1288 44.2558 63.2399 57.4536 49.8732 73.9159C48.2219 75.9473 46.617 78.0336 45.0755 80.1664C43.5467 82.2865 42.077 84.453 40.6538 86.6618C38.8251 89.5125 37.0851 92.4308 35.4465 95.4251C34.8552 96.5063 35.2817 97.8535 36.3756 98.3645L136.89 145.235C138.575 146.02 140.387 144.335 139.762 142.565L138.968 140.314L127.235 107.043L127.24 107.052Z" />
-                    </svg>
-                    DataPizza
-                  </a>{" "}
-                  <span>
-                    as a Frontend Software Engineer, where I worked on{" "}
-                  </span>
-                  <a
-                    href="https://datapizza.tech/it/dualintelligence/"
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
-                  >
-                    DualOS
                   </a>
-                  <span>
-                    , an enterprise platform for AI workflows and automations.
-                  </span>
-                </motion.p>
-                <motion.div
-                  className="items-center text-muted-foreground"
-                  variants={fadeUp}
-                  initial="hidden"
-                  animate="visible"
-                  transition={transition(0.38)}
-                >
-                  <span>I&apos;m also vice president of </span>
+                  , managing{" "}
                   <a
                     href="https://www.bainsa.xyz/"
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
@@ -176,65 +164,181 @@ export default function Page() {
                     </svg>
                     BAINSA
                   </a>
-                  <span>
-                    , the largest Italian and one of the largest European
-                    student associations focused on AI and neuroscience.
-                  </span>
-                </motion.div>
-                <motion.p
-                  className="items-center text-muted-foreground"
+                  , studying NLP, reading A Farewell to Arms, listening to
+                  Prendila così, and watching Obsession.
+                </motion.p>
+              </div>
+              <motion.p
+                className="items-center text-muted-foreground"
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                transition={transition(0.45)}
+              >
+                <span>
+                  You can reach me on{" "}
+                  <a
+                    href="https://www.linkedin.com/in/paoloauletta/"
+                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                  >
+                    <Image
+                      src="/linkedin.svg"
+                      width={72}
+                      height={72}
+                      alt="LinkedIn"
+                      className="mr-1 mb-1 inline h-[1em] w-auto align-middle"
+                    />
+                    LinkedIn
+                  </a>{" "}
+                  or via{" "}
+                  <a
+                    href="mailto:ciao@paolo.sh"
+                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                  >
+                    <svg
+                      className="mr-1 mb-0.5 inline-block size-4 align-middle"
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M2.34086 6.38914C2.1622 6.8145 2.08371 7.26454 2.0442 7.74818C1.99998 8.28936 1.99999 8.95371 2 9.75867V14.2413C1.99999 15.0463 1.99998 15.7106 2.0442 16.2518C2.09012 16.8139 2.18868 17.3306 2.43598 17.816C2.81947 18.5686 3.43139 19.1805 4.18404 19.564C4.66938 19.8113 5.18608 19.9099 5.74818 19.9558C6.28936 20 6.95371 20 7.75866 20H16.2413C17.0462 20 17.7106 20 18.2518 19.9558C18.8139 19.9099 19.3306 19.8113 19.816 19.564C20.5686 19.1805 21.1805 18.5686 21.564 17.816C21.8113 17.3306 21.9099 16.8139 21.9558 16.2518C22 15.7106 22 15.0463 22 14.2413V9.75868C22 8.95372 22 8.28937 21.9558 7.74818C21.9163 7.26453 21.8378 6.81449 21.6591 6.38912L14.5329 12.2196C13.0595 13.4252 10.9405 13.4252 9.46703 12.2196L2.34086 6.38914Z"
+                        fill="currentColor"
+                      />
+                      <path
+                        d="M20.4224 4.8169C20.233 4.67277 20.0302 4.54512 19.816 4.43598C19.3306 4.18868 18.8139 4.09012 18.2518 4.0442C17.7106 3.99998 17.0463 3.99999 16.2413 4H7.7587C6.95375 3.99999 6.28936 3.99998 5.74818 4.0442C5.18608 4.09012 4.66938 4.18868 4.18404 4.43598C3.96982 4.54512 3.76701 4.67278 3.57762 4.81691L10.7335 10.6717C11.4702 11.2745 12.5297 11.2745 13.2665 10.6717L20.4224 4.8169Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    email
+                  </a>
+                  .
+                </span>
+              </motion.p>
+              <div className="flex flex-col gap-2 leading-relaxed">
+                <motion.button
+                  type="button"
+                  className="w-fit cursor-pointer font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
                   variants={fadeUp}
                   initial="hidden"
                   animate="visible"
-                  transition={transition(0.45)}
+                  transition={transition(0.36)}
+                  onClick={() => setIsExpanded((current) => !current)}
                 >
-                  <span>Here you can checkout my </span>
-                  <Link href="/projects">
-                    <span className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground">
-                      projects
+                  <span className="underline decoration-current decoration-1 underline-offset-3">
+                    Read{" "}
+                  </span>
+                  <span className="relative inline-grid overflow-hidden align-bottom">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      <motion.span
+                        key={isExpanded ? "less" : "more"}
+                        className="col-start-1 row-start-1 underline decoration-current decoration-1 underline-offset-3"
+                        initial={{ y: 10, opacity: 0, filter: "blur(4px)" }}
+                        animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
+                        exit={{ y: -10, opacity: 0, filter: "blur(4px)" }}
+                        transition={{ duration: 0.18, ease }}
+                      >
+                        {isExpanded ? "less" : "more"}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                </motion.button>
+                <motion.div
+                  aria-hidden={!isExpanded}
+                  inert={!isExpanded}
+                  className="flex flex-col gap-2 overflow-hidden"
+                  animate={{
+                    opacity: isExpanded ? 1 : 0,
+                    y: isExpanded ? 0 : -8,
+                    filter: isExpanded ? "blur(0px)" : "blur(8px)",
+                  }}
+                  transition={{ duration: 0.24, ease }}
+                  style={{ pointerEvents: isExpanded ? "auto" : "none" }}
+                >
+                  <motion.p
+                    className="items-center text-muted-foreground"
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="visible"
+                    transition={transition(0.3)}
+                  >
+                    <span>
+                      I&apos;m currently in Los Angeles, interning at{" "}
                     </span>
-                  </Link>
-                  <span>
-                    . You can reach me on{" "}
                     <a
-                      href="https://www.linkedin.com/in/paoloauletta/"
+                      href="https://barcloud.com/"
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
-                      <Image
-                        src="/linkedin.svg"
-                        width={72}
-                        height={72}
-                        alt="LinkedIn"
-                        className="mr-1 mb-1 inline h-[1em] w-auto align-middle"
-                      />
-                      LinkedIn
+                      BarCloud
                     </a>{" "}
-                    or via{" "}
+                    <span>
+                      as a Software Engineer, where I&apos;m building frontier
+                      AI systems that automate complex workflows. Before that, I
+                      interned at{" "}
+                    </span>
                     <a
-                      href="mailto:ciao@paolo.sh"
+                      href="https://datapizza.tech/en"
                       className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
                       <svg
-                        className="mr-1 mb-0.5 inline-block size-4 align-middle"
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
+                        viewBox="0 0 210 210"
                         xmlns="http://www.w3.org/2000/svg"
+                        aria-label="DataPizza"
+                        className="inline h-[1.1em] w-auto -translate-y-px fill-current align-middle"
                       >
-                        <path
-                          d="M2.34086 6.38914C2.1622 6.8145 2.08371 7.26454 2.0442 7.74818C1.99998 8.28936 1.99999 8.95371 2 9.75867V14.2413C1.99999 15.0463 1.99998 15.7106 2.0442 16.2518C2.09012 16.8139 2.18868 17.3306 2.43598 17.816C2.81947 18.5686 3.43139 19.1805 4.18404 19.564C4.66938 19.8113 5.18608 19.9099 5.74818 19.9558C6.28936 20 6.95371 20 7.75866 20H16.2413C17.0462 20 17.7106 20 18.2518 19.9558C18.8139 19.9099 19.3306 19.8113 19.816 19.564C20.5686 19.1805 21.1805 18.5686 21.564 17.816C21.8113 17.3306 21.9099 16.8139 21.9558 16.2518C22 15.7106 22 15.0463 22 14.2413V9.75868C22 8.95372 22 8.28937 21.9558 7.74818C21.9163 7.26453 21.8378 6.81449 21.6591 6.38912L14.5329 12.2196C13.0595 13.4252 10.9405 13.4252 9.46703 12.2196L2.34086 6.38914Z"
-                          fill="currentColor"
-                        />
-                        <path
-                          d="M20.4224 4.8169C20.233 4.67277 20.0302 4.54512 19.816 4.43598C19.3306 4.18868 18.8139 4.09012 18.2518 4.0442C17.7106 3.99998 17.0463 3.99999 16.2413 4H7.7587C6.95375 3.99999 6.28936 3.99998 5.74818 4.0442C5.18608 4.09012 4.66938 4.18868 4.18404 4.43598C3.96982 4.54512 3.76701 4.67278 3.57762 4.81691L10.7335 10.6717C11.4702 11.2745 12.5297 11.2745 13.2665 10.6717L20.4224 4.8169Z"
-                          fill="currentColor"
-                        />
+                        <path d="M127.24 107.052L117.61 79.7398C117.243 78.6967 117.737 77.5226 118.747 77.0665C120.457 76.2894 122.197 75.5588 123.962 74.8788C124.195 74.7902 124.418 74.6972 124.651 74.6128C126.18 74.0384 127.721 73.5063 129.267 73.0164C130.331 72.6785 131.459 73.2487 131.83 74.3003L160.042 154.319L166.296 172.061C166.922 173.83 165.11 175.516 163.425 174.73L15.8926 105.937C14.8748 105.464 14.4229 104.256 14.8664 103.2C15.597 101.452 16.3657 99.7075 17.1681 97.9718C17.2737 97.7395 17.375 97.5072 17.4848 97.2707C18.4731 95.1464 19.512 93.0601 20.5805 91.0033C23.0004 86.3535 25.6231 81.8684 28.4316 77.5564C29.8675 75.3561 31.3541 73.2022 32.8829 71.0906C34.4329 68.9536 36.0293 66.8715 37.6721 64.8274C53.6826 44.94 73.9882 29.6686 96.4814 19.8114C98.8126 18.7936 101.161 17.8265 103.534 16.9269C105.266 16.2681 107.01 15.6388 108.763 15.0391C109.84 14.6717 111.001 15.2334 111.381 16.3061L115.82 28.8873L120.938 43.4027L125.314 55.8234C125.715 56.9552 125.09 58.2095 123.95 58.5812C122.476 59.0627 121.006 59.5737 119.541 60.1227C119.308 60.2114 119.089 60.3043 118.856 60.3888C116.47 61.301 114.126 62.2935 111.833 63.3577C97.2711 70.1277 84.5337 79.9426 74.326 92.1436C73.0928 93.6176 71.8934 95.1295 70.7362 96.671C70.0352 97.6044 68.7386 97.8071 67.8179 97.1229L58.9617 90.5219C58.0326 89.8293 57.8468 88.4863 58.5563 87.5403C59.705 86.0072 60.8875 84.5079 62.0996 83.034C73.7221 68.9029 88.2797 57.5211 104.957 49.6447C105.95 49.1759 106.427 48.0188 106.064 46.9883L102.348 36.4469C101.938 35.2898 100.637 34.745 99.5221 35.2602C80.1288 44.2558 63.2399 57.4536 49.8732 73.9159C48.2219 75.9473 46.617 78.0336 45.0755 80.1664C43.5467 82.2865 42.077 84.453 40.6538 86.6618C38.8251 89.5125 37.0851 92.4308 35.4465 95.4251C34.8552 96.5063 35.2817 97.8535 36.3756 98.3645L136.89 145.235C138.575 146.02 140.387 144.335 139.762 142.565L138.968 140.314L127.235 107.043L127.24 107.052Z" />
                       </svg>
-                      email
+                      DataPizza
+                    </a>{" "}
+                    <span>
+                      as a Frontend Software Engineer, where I worked on{" "}
+                    </span>
+                    <a
+                      href="https://datapizza.tech/it/dualintelligence/"
+                      className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      DualOS
                     </a>
-                    .
-                  </span>
-                </motion.p>
+                    <span>
+                      , an enterprise platform for AI workflows and automations.
+                    </span>
+                  </motion.p>
+                  <motion.div
+                    className="items-center text-muted-foreground"
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="visible"
+                    transition={transition(0.38)}
+                  >
+                    <span>I&apos;m also vice president of </span>
+                    <a
+                      href="https://www.bainsa.xyz/"
+                      className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      BAINSA
+                    </a>
+                    <span>
+                      , the largest Italian and one of the largest European
+                      student associations focused on AI and neuroscience.
+                    </span>
+                  </motion.div>
+                  <motion.p
+                    className="items-center text-muted-foreground"
+                    variants={fadeUp}
+                    initial="hidden"
+                    animate="visible"
+                    transition={transition(0.45)}
+                  >
+                    <span>Here you can checkout my </span>
+                    <Link href="/projects">
+                      <span className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground">
+                        projects
+                      </span>
+                    </Link>
+                    <span>.</span>
+                  </motion.p>
+                </motion.div>
               </div>
             </div>
           </div>
