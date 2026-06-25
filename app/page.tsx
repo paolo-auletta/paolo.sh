@@ -23,8 +23,24 @@ export default function Page() {
     <div className="relative flex min-h-svh flex-col">
       <div className="flex flex-1 flex-col items-center justify-center">
         <section className="px-6 sm:px-10 md:px-16 lg:px-20">
-          <div className="flex max-w-lg flex-col gap-8 text-base">
-            <div className="flex flex-col gap-4">
+          <div className="flex max-w-xl flex-col gap-8 text-base">
+            <div className="relative flex flex-col gap-4">
+              <motion.div
+                className="relative h-24 w-24 overflow-hidden sm:h-28 sm:w-28 lg:absolute lg:top-1 lg:-left-36"
+                variants={fadeUp}
+                initial="hidden"
+                animate="visible"
+                transition={transition(0)}
+              >
+                <Image
+                  src="/paolo-portrait.jpeg"
+                  alt="Portrait of Paolo"
+                  fill
+                  className="object-cover object-center"
+                  sizes="(min-width: 640px) 160px, 144px"
+                  priority
+                />
+              </motion.div>
               <motion.h1
                 className="flex items-center gap-1.5 leading-relaxed"
                 variants={fadeUp}
@@ -33,7 +49,7 @@ export default function Page() {
                 transition={transition(0)}
               >
                 <span className="font-medium">
-                  <span className="text-muted-foreground">Ciao, I'm </span>
+                  <span className="text-muted-foreground">Ciao, I&apos;m </span>
                   <span>Paolo</span>
                 </span>
               </motion.h1>
@@ -45,7 +61,7 @@ export default function Page() {
                   animate="visible"
                   transition={transition(0.15)}
                 >
-                  I'm a 19 y/o{" "}
+                  I&apos;m a 19 y/o{" "}
                   <span className="text-foreground"> software developer </span>{" "}
                   and{" "}
                   <a
@@ -56,12 +72,12 @@ export default function Page() {
                     bachelor student{" "}
                   </a>
                   . I care deeply about craft, detail, and the{" "}
-                  <span className="bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text pr-1 font-caveat text-xl leading-0 font-bold whitespace-nowrap text-transparent">
+                  <span className="bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text pr-1 font-caveat text-sm text-xl leading-0 font-bold whitespace-nowrap text-transparent">
                     {" "}
                     little things
                   </span>{" "}
                   that make a{" "}
-                  <span className="font-serif leading-0 text-foreground">
+                  <span className="font-serif text-sm leading-0 text-foreground">
                     {" "}
                     difference
                   </span>{" "}
@@ -74,31 +90,73 @@ export default function Page() {
                   animate="visible"
                   transition={transition(0.3)}
                 >
-                  <span>I'm currently interning at </span>
+                  <span>I&apos;m currently in Los Angeles, interning at </span>
                   <a
-                    href="https://datapizza.tech/en/dualintelligence"
+                    href="https://barcloud.com/"
+                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="mr-1 inline-block h-[1em] w-[1.45em] -translate-y-px bg-current align-middle"
+                      style={{
+                        WebkitMaskImage: "url('/barcloud.svg')",
+                        WebkitMaskRepeat: "no-repeat",
+                        WebkitMaskPosition: "center",
+                        WebkitMaskSize: "contain",
+                        maskImage: "url('/barcloud.svg')",
+                        maskRepeat: "no-repeat",
+                        maskPosition: "center",
+                        maskSize: "contain",
+                      }}
+                    />
+                    BarCloud
+                  </a>{" "}
+                  <span>
+                    as a Software Engineer, where I&apos;m building{" "}
+                    <TextShimmer
+                      duration={2}
+                      className="[--base-color:var(--muted-foreground)]"
+                    >
+                      frontier AI systems
+                    </TextShimmer>{" "}
+                    that automate complex workflows. Before that, I interned
+                    at{" "}
+                  </span>
+                  <a
+                    href="https://datapizza.tech/en"
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                   >
                     <svg
                       viewBox="0 0 210 210"
                       xmlns="http://www.w3.org/2000/svg"
                       aria-label="DataPizza"
-                      className="inline h-[1.1em] w-auto -translate-y-px fill-foreground align-middle"
+                      className="inline h-[1.1em] w-auto -translate-y-px fill-current align-middle"
                     >
                       <path d="M127.24 107.052L117.61 79.7398C117.243 78.6967 117.737 77.5226 118.747 77.0665C120.457 76.2894 122.197 75.5588 123.962 74.8788C124.195 74.7902 124.418 74.6972 124.651 74.6128C126.18 74.0384 127.721 73.5063 129.267 73.0164C130.331 72.6785 131.459 73.2487 131.83 74.3003L160.042 154.319L166.296 172.061C166.922 173.83 165.11 175.516 163.425 174.73L15.8926 105.937C14.8748 105.464 14.4229 104.256 14.8664 103.2C15.597 101.452 16.3657 99.7075 17.1681 97.9718C17.2737 97.7395 17.375 97.5072 17.4848 97.2707C18.4731 95.1464 19.512 93.0601 20.5805 91.0033C23.0004 86.3535 25.6231 81.8684 28.4316 77.5564C29.8675 75.3561 31.3541 73.2022 32.8829 71.0906C34.4329 68.9536 36.0293 66.8715 37.6721 64.8274C53.6826 44.94 73.9882 29.6686 96.4814 19.8114C98.8126 18.7936 101.161 17.8265 103.534 16.9269C105.266 16.2681 107.01 15.6388 108.763 15.0391C109.84 14.6717 111.001 15.2334 111.381 16.3061L115.82 28.8873L120.938 43.4027L125.314 55.8234C125.715 56.9552 125.09 58.2095 123.95 58.5812C122.476 59.0627 121.006 59.5737 119.541 60.1227C119.308 60.2114 119.089 60.3043 118.856 60.3888C116.47 61.301 114.126 62.2935 111.833 63.3577C97.2711 70.1277 84.5337 79.9426 74.326 92.1436C73.0928 93.6176 71.8934 95.1295 70.7362 96.671C70.0352 97.6044 68.7386 97.8071 67.8179 97.1229L58.9617 90.5219C58.0326 89.8293 57.8468 88.4863 58.5563 87.5403C59.705 86.0072 60.8875 84.5079 62.0996 83.034C73.7221 68.9029 88.2797 57.5211 104.957 49.6447C105.95 49.1759 106.427 48.0188 106.064 46.9883L102.348 36.4469C101.938 35.2898 100.637 34.745 99.5221 35.2602C80.1288 44.2558 63.2399 57.4536 49.8732 73.9159C48.2219 75.9473 46.617 78.0336 45.0755 80.1664C43.5467 82.2865 42.077 84.453 40.6538 86.6618C38.8251 89.5125 37.0851 92.4308 35.4465 95.4251C34.8552 96.5063 35.2817 97.8535 36.3756 98.3645L136.89 145.235C138.575 146.02 140.387 144.335 139.762 142.565L138.968 140.314L127.235 107.043L127.24 107.052Z" />
                     </svg>
                     DataPizza
                   </a>{" "}
                   <span>
-                    as a SWE, focusing on building{" "}
-                    <TextShimmer
-                      duration={2}
-                      className="[--base-color:var(--muted-foreground)]"
-                    >
-                      frontier AI-solutions
-                    </TextShimmer>{" "}
-                    for companies. I'm also member of{" "}
+                    as a Frontend Software Engineer, where I worked on{" "}
                   </span>
+                  <a
+                    href="https://datapizza.tech/it/dualintelligence/"
+                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                  >
+                    DualOS
+                  </a>
+                  <span>
+                    , an enterprise platform for AI workflows and automations.
+                  </span>
+                </motion.p>
+                <motion.div
+                  className="items-center text-muted-foreground"
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="visible"
+                  transition={transition(0.38)}
+                >
+                  <span>I&apos;m also vice president of </span>
                   <a
                     href="https://www.bainsa.xyz/"
                     className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
@@ -117,10 +175,12 @@ export default function Page() {
                       <path d="M 42.541 0.49 L 30.651 0.49 C 30.301 0.49 30.031 0.77 30.031 1.11 L 30.031 5.97 C 30.031 6.31 30.311 6.591 30.651 6.591 L 43.051 6.591 C 43.741 6.601 44.301 7.16 44.301 7.85 L 44.301 20.25 C 44.301 20.601 44.581 20.87 44.921 20.87 L 49.801 20.87 C 50.151 20.87 50.421 20.59 50.421 20.25 L 50.421 8.35 C 50.421 7.38 49.641 6.6 48.671 6.6 L 45.531 6.6 C 44.841 6.6 44.281 6.04 44.281 5.35 L 44.281 2.22 C 44.271 1.26 43.491 0.48 42.521 0.48 Z"></path>
                     </svg>
                     BAINSA
-                  </a>{" "}
-                  , a Bocconi student association focused on AI and
-                  Neuroscience, where I co-manage the Analysis Division.
-                </motion.p>
+                  </a>
+                  <span>
+                    , the largest Italian and one of the largest European
+                    student associations focused on AI and neuroscience.
+                  </span>
+                </motion.div>
                 <motion.p
                   className="items-center text-muted-foreground"
                   variants={fadeUp}
