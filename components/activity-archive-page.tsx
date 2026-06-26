@@ -255,12 +255,9 @@ function ActivityArtwork({
           unoptimized
         />
       ) : (
-        <>
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgb(255_255_255/0.34),transparent_42%),radial-gradient(circle_at_70%_80%,rgb(0_0_0/0.38),transparent_38%)]" />
-          <span className="absolute right-1 bottom-1 font-serif text-[10px] font-semibold text-white/85">
-            {initials}
-          </span>
-        </>
+        <span className="absolute right-1 bottom-1 font-serif text-[10px] font-semibold text-muted-foreground/70">
+          {initials}
+        </span>
       )}
     </div>
   )
@@ -299,12 +296,9 @@ function PinnedArtwork({
           unoptimized
         />
       ) : (
-        <>
-          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgb(255_255_255/0.34),transparent_42%),radial-gradient(circle_at_70%_80%,rgb(0_0_0/0.38),transparent_38%)]" />
-          <span className="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-white/85">
-            {initials}
-          </span>
-        </>
+        <span className="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70">
+          {initials}
+        </span>
       )}
     </div>
   )
