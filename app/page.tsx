@@ -3,7 +3,13 @@
 import { AnimatePresence, motion } from "motion/react"
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useRef, useState, type CSSProperties } from "react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
@@ -23,10 +29,54 @@ const externalLinkProps = {
   rel: "noreferrer",
 } as const
 
+const hoverPreviewsEnabled = false
+
+function HoverPreview({ children }: { children: ReactNode }) {
+  if (!hoverPreviewsEnabled) {
+    return <>{children}</>
+  }
+
+  return (
+    <span className="group relative inline-block">
+      {children}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 h-28 w-28 -translate-x-1/2 translate-y-1 scale-98 overflow-hidden rounded-md border border-border/70 bg-background opacity-0 shadow-[0_8px_20px_rgb(0_0_0/0.12)] transition-[opacity,transform] duration-150 ease-out group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100"
+      ></span>
+    </span>
+  )
+}
+
 export default function Page() {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [latestMovieTitle, setLatestMovieTitle] = useState("Obsession")
   const [teaserHeight, setTeaserHeight] = useState(112)
   const teaserRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    let isMounted = true
+
+    fetch("/api/letterboxd/latest")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Unable to load latest Letterboxd movie")
+        }
+
+        return response.json() as Promise<{ title?: string }>
+      })
+      .then((movie) => {
+        if (isMounted && movie.title) {
+          setLatestMovieTitle(movie.title)
+        }
+      })
+      .catch(() => {
+        // Keep the fallback copy when the feed is unavailable.
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   useEffect(() => {
     const teaser = teaserRef.current
@@ -129,51 +179,82 @@ export default function Page() {
                   animate="visible"
                   transition={transition(0.28)}
                 >
-                  Recently, I&apos;ve been working at{" "}
-                  <a
-                    href="https://barcloud.com/"
-                    {...externalLinkProps}
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="mx-1 inline-block h-[1em] w-[1.45em] -translate-y-px bg-current align-middle"
-                      style={{
-                        WebkitMaskImage: "url('/barcloud.svg')",
-                        WebkitMaskRepeat: "no-repeat",
-                        WebkitMaskPosition: "center",
-                        WebkitMaskSize: "contain",
-                        maskImage: "url('/barcloud.svg')",
-                        maskRepeat: "no-repeat",
-                        maskPosition: "center",
-                        maskSize: "contain",
-                      }}
-                    />
-                    BarCloud
-                  </a>
-                  , managing{" "}
-                  <a
-                    href="https://www.bainsa.xyz/"
-                    {...externalLinkProps}
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
-                  >
-                    <svg
-                      viewBox="0 0 51 51"
-                      className="mx-1 mb-1 inline h-[0.9em] w-auto align-middle"
-                      aria-hidden="true"
-                      fill="currentColor"
+                  Currently, I&apos;m working at{" "}
+                  <HoverPreview>
+                    <a
+                      href="https://barcloud.com/"
+                      {...externalLinkProps}
+                      className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
-                      <path d="M 30.271 22.42 L 42.161 22.42 C 42.511 22.42 42.781 22.7 42.781 23.04 L 42.781 27.9 C 42.781 28.24 42.501 28.52 42.161 28.52 L 29.761 28.52 C 29.071 28.53 28.511 29.09 28.511 29.78 L 28.511 42.18 C 28.511 42.53 28.231 42.8 27.891 42.8 L 23.011 42.8 C 22.661 42.8 22.391 42.52 22.391 42.18 L 22.391 30.28 C 22.391 29.31 23.171 28.53 24.141 28.53 L 27.281 28.53 C 27.971 28.53 28.531 27.97 28.531 27.28 L 28.531 24.15 C 28.541 23.19 29.321 22.41 30.291 22.41 Z"></path>
-                      <path d="M 20.611 28.55 L 8.722 28.55 C 8.372 28.55 8.102 28.27 8.102 27.93 L 8.102 23.07 C 8.102 22.73 8.382 22.45 8.722 22.45 L 21.122 22.45 C 21.812 22.44 22.372 21.88 22.372 21.19 L 22.372 8.79 C 22.372 8.44 22.651 8.17 22.991 8.17 L 27.872 8.17 C 28.222 8.17 28.491 8.45 28.491 8.79 L 28.491 20.69 C 28.491 21.66 27.712 22.44 26.741 22.44 L 23.602 22.44 C 22.912 22.44 22.352 23 22.352 23.69 L 22.352 26.82 C 22.342 27.78 21.562 28.56 20.592 28.56 Z"></path>
-                      <path d="M 0.43 42.59 L 0.43 30.71 C 0.43 30.36 0.71 30.09 1.05 30.09 L 5.91 30.09 C 6.25 30.09 6.53 30.37 6.53 30.71 L 6.53 43.1 C 6.54 43.79 7.1 44.35 7.79 44.35 L 20.2 44.35 C 20.55 44.35 20.82 44.63 20.82 44.97 L 20.82 49.85 C 20.82 50.2 20.54 50.47 20.2 50.47 L 8.29 50.47 C 7.32 50.47 6.54 49.69 6.54 48.72 L 6.54 45.58 C 6.54 44.89 5.98 44.33 5.29 44.33 L 2.15 44.33 C 1.19 44.32 0.41 43.54 0.41 42.57 Z"></path>
-                      <path d="M 42.541 50.46 L 30.651 50.46 C 30.301 50.46 30.031 50.18 30.031 49.84 L 30.031 44.98 C 30.031 44.64 30.311 44.36 30.651 44.36 L 43.051 44.36 C 43.741 44.35 44.301 43.79 44.301 43.1 L 44.301 30.7 C 44.301 30.35 44.581 30.08 44.921 30.08 L 49.801 30.08 C 50.151 30.08 50.421 30.36 50.421 30.7 L 50.421 42.6 C 50.421 43.57 49.641 44.35 48.671 44.35 L 45.531 44.35 C 44.841 44.35 44.281 44.91 44.281 45.6 L 44.281 48.73 C 44.271 49.69 43.491 50.47 42.521 50.47 Z"></path>
-                      <path d="M 0.43 8.38 L 0.43 20.26 C 0.43 20.61 0.71 20.88 1.05 20.88 L 5.91 20.88 C 6.25 20.88 6.53 20.6 6.53 20.26 L 6.53 7.87 C 6.54 7.18 7.1 6.62 7.79 6.62 L 20.2 6.62 C 20.55 6.62 20.82 6.34 20.82 6 L 20.82 1.12 C 20.82 0.77 20.54 0.5 20.2 0.5 L 8.29 0.5 C 7.32 0.5 6.54 1.28 6.54 2.25 L 6.54 5.39 C 6.54 6.08 5.98 6.64 5.29 6.64 L 2.15 6.64 C 1.19 6.65 0.41 7.43 0.41 8.4 Z"></path>
-                      <path d="M 42.541 0.49 L 30.651 0.49 C 30.301 0.49 30.031 0.77 30.031 1.11 L 30.031 5.97 C 30.031 6.31 30.311 6.591 30.651 6.591 L 43.051 6.591 C 43.741 6.601 44.301 7.16 44.301 7.85 L 44.301 20.25 C 44.301 20.601 44.581 20.87 44.921 20.87 L 49.801 20.87 C 50.151 20.87 50.421 20.59 50.421 20.25 L 50.421 8.35 C 50.421 7.38 49.641 6.6 48.671 6.6 L 45.531 6.6 C 44.841 6.6 44.281 6.04 44.281 5.35 L 44.281 2.22 C 44.271 1.26 43.491 0.48 42.521 0.48 Z"></path>
-                    </svg>
-                    BAINSA
-                  </a>
-                  , studying NLP, reading A Farewell to Arms, listening to
-                  Prendila così, and watching Obsession.
+                      <span
+                        aria-hidden="true"
+                        className="mx-1 inline-block h-[1em] w-[1.45em] -translate-y-px bg-current align-middle"
+                        style={{
+                          WebkitMaskImage: "url('/barcloud.svg')",
+                          WebkitMaskRepeat: "no-repeat",
+                          WebkitMaskPosition: "center",
+                          WebkitMaskSize: "contain",
+                          maskImage: "url('/barcloud.svg')",
+                          maskRepeat: "no-repeat",
+                          maskPosition: "center",
+                          maskSize: "contain",
+                        }}
+                      />
+                      BarCloud
+                    </a>
+                  </HoverPreview>{" "}
+                  and managing{" "}
+                  <HoverPreview>
+                    <a
+                      href="https://www.bainsa.xyz/"
+                      {...externalLinkProps}
+                      className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      <svg
+                        viewBox="0 0 51 51"
+                        className="mx-1 mb-1 inline h-[0.9em] w-auto align-middle"
+                        aria-hidden="true"
+                        fill="currentColor"
+                      >
+                        <path d="M 30.271 22.42 L 42.161 22.42 C 42.511 22.42 42.781 22.7 42.781 23.04 L 42.781 27.9 C 42.781 28.24 42.501 28.52 42.161 28.52 L 29.761 28.52 C 29.071 28.53 28.511 29.09 28.511 29.78 L 28.511 42.18 C 28.511 42.53 28.231 42.8 27.891 42.8 L 23.011 42.8 C 22.661 42.8 22.391 42.52 22.391 42.18 L 22.391 30.28 C 22.391 29.31 23.171 28.53 24.141 28.53 L 27.281 28.53 C 27.971 28.53 28.531 27.97 28.531 27.28 L 28.531 24.15 C 28.541 23.19 29.321 22.41 30.291 22.41 Z"></path>
+                        <path d="M 20.611 28.55 L 8.722 28.55 C 8.372 28.55 8.102 28.27 8.102 27.93 L 8.102 23.07 C 8.102 22.73 8.382 22.45 8.722 22.45 L 21.122 22.45 C 21.812 22.44 22.372 21.88 22.372 21.19 L 22.372 8.79 C 22.372 8.44 22.651 8.17 22.991 8.17 L 27.872 8.17 C 28.222 8.17 28.491 8.45 28.491 8.79 L 28.491 20.69 C 28.491 21.66 27.712 22.44 26.741 22.44 L 23.602 22.44 C 22.912 22.44 22.352 23 22.352 23.69 L 22.352 26.82 C 22.342 27.78 21.562 28.56 20.592 28.56 Z"></path>
+                        <path d="M 0.43 42.59 L 0.43 30.71 C 0.43 30.36 0.71 30.09 1.05 30.09 L 5.91 30.09 C 6.25 30.09 6.53 30.37 6.53 30.71 L 6.53 43.1 C 6.54 43.79 7.1 44.35 7.79 44.35 L 20.2 44.35 C 20.55 44.35 20.82 44.63 20.82 44.97 L 20.82 49.85 C 20.82 50.2 20.54 50.47 20.2 50.47 L 8.29 50.47 C 7.32 50.47 6.54 49.69 6.54 48.72 L 6.54 45.58 C 6.54 44.89 5.98 44.33 5.29 44.33 L 2.15 44.33 C 1.19 44.32 0.41 43.54 0.41 42.57 Z"></path>
+                        <path d="M 42.541 50.46 L 30.651 50.46 C 30.301 50.46 30.031 50.18 30.031 49.84 L 30.031 44.98 C 30.031 44.64 30.311 44.36 30.651 44.36 L 43.051 44.36 C 43.741 44.35 44.301 43.79 44.301 43.1 L 44.301 30.7 C 44.301 30.35 44.581 30.08 44.921 30.08 L 49.801 30.08 C 50.151 30.08 50.421 30.36 50.421 30.7 L 50.421 42.6 C 50.421 43.57 49.641 44.35 48.671 44.35 L 45.531 44.35 C 44.841 44.35 44.281 44.91 44.281 45.6 L 44.281 48.73 C 44.271 49.69 43.491 50.47 42.521 50.47 Z"></path>
+                        <path d="M 0.43 8.38 L 0.43 20.26 C 0.43 20.61 0.71 20.88 1.05 20.88 L 5.91 20.88 C 6.25 20.88 6.53 20.6 6.53 20.26 L 6.53 7.87 C 6.54 7.18 7.1 6.62 7.79 6.62 L 20.2 6.62 C 20.55 6.62 20.82 6.34 20.82 6 L 20.82 1.12 C 20.82 0.77 20.54 0.5 20.2 0.5 L 8.29 0.5 C 7.32 0.5 6.54 1.28 6.54 2.25 L 6.54 5.39 C 6.54 6.08 5.98 6.64 5.29 6.64 L 2.15 6.64 C 1.19 6.65 0.41 7.43 0.41 8.4 Z"></path>
+                        <path d="M 42.541 0.49 L 30.651 0.49 C 30.301 0.49 30.031 0.77 30.031 1.11 L 30.031 5.97 C 30.031 6.31 30.311 6.591 30.651 6.591 L 43.051 6.591 C 43.741 6.601 44.301 7.16 44.301 7.85 L 44.301 20.25 C 44.301 20.601 44.581 20.87 44.921 20.87 L 49.801 20.87 C 50.151 20.87 50.421 20.59 50.421 20.25 L 50.421 8.35 C 50.421 7.38 49.641 6.6 48.671 6.6 L 45.531 6.6 C 44.841 6.6 44.281 6.04 44.281 5.35 L 44.281 2.22 C 44.271 1.26 43.491 0.48 42.521 0.48 Z"></path>
+                      </svg>
+                      BAINSA
+                    </a>
+                  </HoverPreview>
+                  . Recently, I&apos;ve also been studying{" "}
+                  <HoverPreview>
+                    <a
+                      href="https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1246/"
+                      {...externalLinkProps}
+                      className="font-medium text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      Stanford CS 224N
+                    </a>
+                  </HoverPreview>
+                  , listening to{" "}
+                  <HoverPreview>
+                    <Link
+                      href="/music"
+                      className="font-medium text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      I Follow Rivers
+                    </Link>
+                  </HoverPreview>
+                  , and watching{" "}
+                  <HoverPreview>
+                    <Link
+                      href="/movies"
+                      className="font-medium text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    >
+                      {latestMovieTitle}
+                    </Link>
+                  </HoverPreview>
+                  .
                 </motion.p>
               </div>
               <motion.p
