@@ -39,7 +39,9 @@ type RawMusicRecap = {
   songs: RawMusicSong[]
 }
 
-const ONE_DAY = 24 * 60 * 60
+const permanentArtworkFetchOptions = {
+  cache: "force-cache",
+} as const
 
 const monthOrder = [
   "january",
@@ -563,6 +565,305 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
     ],
   },
+  {
+    monthLabel: "February 2026",
+    albums: [
+      {
+        title: "The Forever Story (Extended Version)",
+        artist: "JID",
+        minutes: 71,
+      },
+      {
+        title: "The Beatles (The White Album)",
+        artist: "The Beatles",
+        minutes: 31,
+      },
+      {
+        title: "God Does Like Ugly",
+        artist: "JID",
+        minutes: 23,
+      },
+      {
+        title: "Travelling Without Moving",
+        artist: "Jamiroquai",
+        minutes: 14,
+      },
+      {
+        title: "ASTROWORLD",
+        artist: "Travis Scott",
+        minutes: 2,
+      },
+      {
+        title: "Any Day Now",
+        artist: "Joan Baez",
+        minutes: 2,
+      },
+    ],
+    songs: [
+      {
+        title: "Your Mother Should Know",
+        albumTitle: "Magical Mystery Tour",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Honey Pie",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "I'm So Tired",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Dear Prudence",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "While My Guitar Gently Weeps",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "Cry Baby Cry",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "Martha My Dear",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "Nights",
+        albumTitle: "Blonde",
+        artist: "Frank Ocean",
+        streams: 4,
+      },
+      {
+        title: "Brasilian Skies",
+        albumTitle: "Brasilian Skies",
+        artist: "Masayoshi Takanaka",
+        streams: 4,
+      },
+      {
+        title: "Strawberry Fields Forever",
+        albumTitle: "Magical Mystery Tour",
+        artist: "The Beatles",
+        streams: 4,
+      },
+      {
+        title: "I've Got a Feeling",
+        albumTitle: "Let It Be",
+        artist: "The Beatles",
+        streams: 4,
+      },
+      {
+        title: "Ob-La-Di, Ob-La-Da",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 4,
+      },
+      {
+        title: "Rocky Raccoon",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 4,
+      },
+      {
+        title: "Passionfruit",
+        albumTitle: "More Life",
+        artist: "Drake",
+        streams: 4,
+      },
+      {
+        title: "And Your Bird Can Sing (2022 Mix)",
+        albumTitle: "Revolver (Super Deluxe)",
+        artist: "The Beatles",
+        streams: 4,
+      },
+    ],
+  },
+  {
+    monthLabel: "January 2026",
+    albums: [
+      {
+        title: "Vespertine",
+        artist: "Björk",
+        minutes: 95,
+      },
+      {
+        title: "All Things Must Pass (50th Anniversary)",
+        artist: "George Harrison",
+        minutes: 74,
+      },
+      {
+        title: "Don't Be Dumb",
+        artist: "A$AP Rocky",
+        minutes: 54,
+      },
+      {
+        title: "Homogenic",
+        artist: "Björk",
+        minutes: 42,
+      },
+      {
+        title: "\"Awaken, My Love!\"",
+        artist: "Childish Gambino",
+        minutes: 13,
+      },
+      {
+        title: "Year of the Cat (45th Anniversary)",
+        artist: "Al Stewart",
+        minutes: 12,
+      },
+      {
+        title: "Post",
+        artist: "Björk",
+        minutes: 11,
+      },
+      {
+        title: "Action",
+        artist: "The Blackbyrds",
+        minutes: 10,
+      },
+      {
+        title: "LP!",
+        artist: "JPEGMAFIA",
+        minutes: 6,
+      },
+      {
+        title: "Travelling Without Moving (20th Anniversary)",
+        artist: "Jamiroquai",
+        minutes: 5,
+      },
+      {
+        title: "MAKE UP CITY",
+        artist: "Casiopea",
+        minutes: 4,
+      },
+      {
+        title: "Belaya Polosa",
+        artist: "Molchat Doma",
+        minutes: 4,
+      },
+      {
+        title: "CASIOPEA",
+        artist: "Casiopea",
+        minutes: 4,
+      },
+      {
+        title: "The Stranger",
+        artist: "Billy Joel",
+        minutes: 3,
+      },
+      {
+        title: "Milk & Kisses",
+        artist: "Cocteau Twins",
+        minutes: 3,
+      },
+    ],
+    songs: [
+      {
+        title: "Paranoid Android",
+        albumTitle: "OK Computer",
+        artist: "Radiohead",
+        streams: 10,
+      },
+      {
+        title: "Martha My Dear",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 10,
+      },
+      {
+        title: "And Your Bird Can Sing (2022 Mix)",
+        albumTitle: "Revolver (Super Deluxe)",
+        artist: "The Beatles",
+        streams: 10,
+      },
+      {
+        title: "Helter Skelter",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 9,
+      },
+      {
+        title: "For No One (2022 Mix)",
+        albumTitle: "Revolver (Super Deluxe)",
+        artist: "The Beatles",
+        streams: 9,
+      },
+      {
+        title: "15 Step",
+        albumTitle: "In Rainbows",
+        artist: "Radiohead",
+        streams: 8,
+      },
+      {
+        title: "Just",
+        albumTitle: "The Bends",
+        artist: "Radiohead",
+        streams: 8,
+      },
+      {
+        title: "Get Back",
+        albumTitle: "Let It Be",
+        artist: "The Beatles",
+        streams: 8,
+      },
+      {
+        title: "Subterranean Homesick Alien",
+        albumTitle: "OK Computer",
+        artist: "Radiohead",
+        streams: 7,
+      },
+      {
+        title: "Jigsaw Falling Into Place",
+        albumTitle: "In Rainbows",
+        artist: "Radiohead",
+        streams: 7,
+      },
+      {
+        title: "Idioteque",
+        albumTitle: "Kid A",
+        artist: "Radiohead",
+        streams: 7,
+      },
+      {
+        title: "Rocky Raccoon",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Cry Baby Cry",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "With A Little Help From My Friends (2017 Mix)",
+        albumTitle: "Sgt. Pepper's Lonely Hearts Club Band",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "She Came In Through the Bathroom Window (2019 Mix)",
+        albumTitle: "Abbey Road (Super Deluxe Edition)",
+        artist: "The Beatles",
+        streams: 7,
+      },
+    ],
+  },
 ]
 
 function getMonthFromLabel(monthLabel: string): MusicArchiveMonth & {
@@ -743,9 +1044,7 @@ async function getDeezerArtwork({
         `https://api.deezer.com/search/${
           entity === "album" ? "album" : "track"
         }?${params}`,
-        {
-          next: { revalidate: ONE_DAY },
-        },
+        permanentArtworkFetchOptions
       )
 
       if (!response.ok) {
@@ -820,9 +1119,10 @@ async function getItunesArtwork({
   })
 
   try {
-    const response = await fetch(`https://itunes.apple.com/search?${params}`, {
-      next: { revalidate: ONE_DAY },
-    })
+    const response = await fetch(
+      `https://itunes.apple.com/search?${params}`,
+      permanentArtworkFetchOptions
+    )
 
     if (!response.ok) {
       return undefined

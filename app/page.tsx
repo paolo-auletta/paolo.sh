@@ -11,6 +11,8 @@ import {
   type ReactNode,
 } from "react"
 
+import { usePageEntranceAnimation } from "@/components/use-page-entrance-animation"
+
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
 const fadeUp = {
@@ -48,6 +50,7 @@ function HoverPreview({ children }: { children: ReactNode }) {
 }
 
 export default function Page() {
+  const shouldAnimatePageEntrance = usePageEntranceAnimation("home")
   const [isExpanded, setIsExpanded] = useState(false)
   const [latestMovieTitle, setLatestMovieTitle] = useState("Obsession")
   const [latestMusicTitle, setLatestMusicTitle] = useState("Graduation")
@@ -115,6 +118,10 @@ export default function Page() {
     return () => observer.disconnect()
   }, [])
 
+  const entranceInitial = shouldAnimatePageEntrance ? "hidden" : false
+  const entranceTransition = (delay: number) =>
+    shouldAnimatePageEntrance ? transition(delay) : { duration: 0 }
+
   return (
     <div className="relative flex min-h-svh flex-col">
       <div className="flex flex-1 flex-col items-center [justify-content:safe_center] py-10 sm:py-14 md:py-16">
@@ -129,9 +136,9 @@ export default function Page() {
                   } as CSSProperties
                 }
                 variants={fadeUp}
-                initial="hidden"
+                initial={entranceInitial}
                 animate="visible"
-                transition={transition(0)}
+                transition={entranceTransition(0)}
               >
                 <Image
                   src="/paolo-portrait.jpeg"
@@ -149,9 +156,9 @@ export default function Page() {
                 <motion.h1
                   className="flex items-center gap-1.5"
                   variants={fadeUp}
-                  initial="hidden"
+                  initial={entranceInitial}
                   animate="visible"
-                  transition={transition(0)}
+                  transition={entranceTransition(0)}
                 >
                   <span className="font-medium">
                     <span className="text-muted-foreground">
@@ -163,9 +170,9 @@ export default function Page() {
                 <motion.p
                   className="text-muted-foreground"
                   variants={fadeUp}
-                  initial="hidden"
+                  initial={entranceInitial}
                   animate="visible"
-                  transition={transition(0.15)}
+                  transition={entranceTransition(0.15)}
                 >
                   I&apos;m a 19 y/o{" "}
                   <span className="text-foreground"> software developer </span>{" "}
@@ -193,9 +200,9 @@ export default function Page() {
                 <motion.p
                   className="items-center text-muted-foreground"
                   variants={fadeUp}
-                  initial="hidden"
+                  initial={entranceInitial}
                   animate="visible"
-                  transition={transition(0.28)}
+                  transition={entranceTransition(0.28)}
                 >
                   Currently, I&apos;m working at{" "}
                   <HoverPreview>
@@ -278,9 +285,9 @@ export default function Page() {
               <motion.p
                 className="items-center text-muted-foreground"
                 variants={fadeUp}
-                initial="hidden"
+                initial={entranceInitial}
                 animate="visible"
-                transition={transition(0.45)}
+                transition={entranceTransition(0.45)}
               >
                 <span>
                   You can reach me on{" "}
@@ -329,9 +336,9 @@ export default function Page() {
                   type="button"
                   className="w-fit cursor-pointer text-sm font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
                   variants={fadeUp}
-                  initial="hidden"
+                  initial={entranceInitial}
                   animate="visible"
-                  transition={transition(0.36)}
+                  transition={entranceTransition(0.36)}
                   onClick={() => setIsExpanded((current) => !current)}
                 >
                   <span className="underline decoration-current decoration-1 underline-offset-3">
@@ -356,6 +363,11 @@ export default function Page() {
                   aria-hidden={!isExpanded}
                   inert={!isExpanded}
                   className="flex flex-col gap-2 overflow-hidden"
+                  initial={{
+                    opacity: isExpanded ? 1 : 0,
+                    y: isExpanded ? 0 : -8,
+                    filter: isExpanded ? "blur(0px)" : "blur(8px)",
+                  }}
                   animate={{
                     opacity: isExpanded ? 1 : 0,
                     y: isExpanded ? 0 : -8,
@@ -367,9 +379,9 @@ export default function Page() {
                   <motion.p
                     className="items-center text-muted-foreground"
                     variants={fadeUp}
-                    initial="hidden"
+                    initial={entranceInitial}
                     animate="visible"
-                    transition={transition(0.3)}
+                    transition={entranceTransition(0.3)}
                   >
                     <span>
                       I&apos;m currently in Los Angeles, interning at{" "}
@@ -418,9 +430,9 @@ export default function Page() {
                   <motion.div
                     className="items-center text-muted-foreground"
                     variants={fadeUp}
-                    initial="hidden"
+                    initial={entranceInitial}
                     animate="visible"
-                    transition={transition(0.38)}
+                    transition={entranceTransition(0.38)}
                   >
                     <span>I&apos;m also vice president of </span>
                     <a
@@ -438,9 +450,9 @@ export default function Page() {
                   <motion.p
                     className="items-center text-muted-foreground"
                     variants={fadeUp}
-                    initial="hidden"
+                    initial={entranceInitial}
                     animate="visible"
-                    transition={transition(0.45)}
+                    transition={entranceTransition(0.45)}
                   >
                     <span>Here you can checkout my </span>
                     <Link href="/projects">

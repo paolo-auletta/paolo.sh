@@ -723,13 +723,12 @@ export function ActivityArchivePage({
                       animate={archiveVisible}
                       transition={footerTransition}
                     >
-                      <button
-                        type="button"
+                      <Link
                         className={`${footerLinkClassName} cursor-pointer`}
-                        onClick={() => window.history.back()}
+                        href="/"
                       >
                         Back
-                      </button>
+                      </Link>
                       {viewAllHref && isExternalViewAll ? (
                         <a
                           href={viewAllHref}

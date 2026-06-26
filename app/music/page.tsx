@@ -1,7 +1,8 @@
 import { ActivityArchivePage } from "@/components/activity-archive-page"
 import { getLatestMusicRecap } from "@/lib/music"
 
-export const revalidate = 3600
+export const fetchCache = "force-cache"
+export const revalidate = false
 
 export default async function MusicPage() {
   const musicRecap = await getLatestMusicRecap()

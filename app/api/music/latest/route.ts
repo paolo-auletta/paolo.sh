@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 
 import { getLatestRawMusicRecap } from "@/lib/music"
 
-export const revalidate = 3600
+export const fetchCache = "force-cache"
+export const revalidate = false
 
 export async function GET() {
   const recap = getLatestRawMusicRecap()

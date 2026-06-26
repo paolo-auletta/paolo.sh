@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 
 import { type MusicArchiveMonth, type MusicArchiveYear } from "@/lib/music"
@@ -14,6 +15,8 @@ type MusicArchiveNavProps = {
 }
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
+const backLinkClassName =
+  "mt-8 block w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50 2xl:mt-10"
 
 function getArchiveHref(year: MusicArchiveYear, month: MusicArchiveMonth) {
   const params = new URLSearchParams({
@@ -38,7 +41,7 @@ export function MusicArchiveNav({
     const frame = requestAnimationFrame(() => {
       const selectedMonthButton =
         monthRailRef.current?.querySelector<HTMLButtonElement>(
-          `[data-month-slug="${selectedMonth.slug}"]`,
+          `[data-month-slug="${selectedMonth.slug}"]`
         )
 
       selectedMonthButton?.scrollIntoView({
@@ -79,7 +82,7 @@ export function MusicArchiveNav({
         <motion.div
           ref={monthRailRef}
           key={selectedYear.year}
-          className="mt-3 flex gap-4 overflow-x-auto pb-1 text-base leading-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="mt-3 flex gap-4 overflow-x-auto pb-1 text-sm leading-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           initial={reducedMotion ? false : { opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.22, ease }}
@@ -137,7 +140,7 @@ export function MusicArchiveNav({
                 {isOpen ? (
                   <motion.ul
                     key={year.year}
-                    className="mt-1 flex flex-col gap-0.5 overflow-hidden pl-5"
+                    className="mt-1 flex flex-col gap-0.5 overflow-hidden pl-5 text-sm leading-relaxed"
                     initial={
                       reducedMotion ? false : { height: 0, opacity: 0, y: -4 }
                     }
@@ -189,6 +192,9 @@ export function MusicArchiveNav({
           )
         })}
       </ul>
+      <Link href="/music" className={backLinkClassName}>
+        Back
+      </Link>
     </nav>
   )
 }
