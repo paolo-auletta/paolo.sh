@@ -1,21 +1,17 @@
 "use client"
 
-import { Heart, Star } from "lucide-react"
+import { Dot, Heart, Star } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
 import Image from "next/image"
+import Link from "next/link"
 
 import { type LetterboxdMovie } from "@/lib/letterboxd"
-
-type ArchiveSong = {
-  artist: string
-  rank: string
-  streams: string
-  title: string
-}
+import { type MusicAlbum, type MusicRecap, type MusicSong } from "@/lib/music"
 
 type ActivityArchivePageProps = {
   monthLabel: string
   movies?: LetterboxdMovie[]
+  musicRecap?: MusicRecap
   title: "Music" | "Movies"
   viewAllHref?: string
 }
@@ -85,40 +81,67 @@ const fallbackMovieActivity: LetterboxdMovie[] = [
   },
 ]
 
-const musicActivity: ArchiveSong[] = [
-  {
-    rank: "1",
-    title: "I Follow Rivers (The Magician Remix)",
-    artist: "Lykke Li",
-    streams: "10 streams",
-  },
-  {
-    rank: "2",
-    title: "Devil In a New Dress (feat. Rick Ross)",
-    artist: "Kanye West",
-    streams: "6 streams",
-  },
-  {
-    rank: "3",
-    title: "Big Brother",
-    artist: "Kanye West",
-    streams: "6 streams",
-  },
-  {
-    rank: "4",
-    title: "Nights",
-    artist: "Frank Ocean",
-    streams: "5 streams",
-  },
-  {
-    rank: "5",
-    title: "Prendila cosi",
-    artist: "Lucio Battisti",
-    streams: "5 streams",
-  },
-]
-
-const pinnedMusicActivity = musicActivity.slice(0, 4)
+const fallbackMusicRecap: MusicRecap = {
+  monthLabel: "June 2026",
+  albums: [
+    {
+      artist: "Kanye West",
+      minutes: 42,
+      rank: "1",
+      title: "My Beautiful Dark Twisted Fantasy",
+    },
+    {
+      artist: "Frank Ocean",
+      minutes: 38,
+      rank: "2",
+      title: "Blonde",
+    },
+    {
+      artist: "Lykke Li",
+      minutes: 31,
+      rank: "3",
+      title: "I Never Learn",
+    },
+    {
+      artist: "Lucio Battisti",
+      minutes: 28,
+      rank: "4",
+      title: "Anima latina",
+    },
+  ],
+  songs: [
+    {
+      artist: "Lykke Li",
+      rank: "1",
+      streams: 10,
+      title: "I Follow Rivers (The Magician Remix)",
+    },
+    {
+      artist: "Kanye West",
+      rank: "2",
+      streams: 6,
+      title: "Devil In a New Dress (feat. Rick Ross)",
+    },
+    {
+      artist: "Kanye West",
+      rank: "3",
+      streams: 6,
+      title: "Big Brother",
+    },
+    {
+      artist: "Frank Ocean",
+      rank: "4",
+      streams: 5,
+      title: "Nights",
+    },
+    {
+      artist: "Lucio Battisti",
+      rank: "5",
+      streams: 5,
+      title: "Prendila cosi",
+    },
+  ],
+}
 
 const pinnedMovieActivity: LetterboxdMovie[] = [
   {
@@ -166,14 +189,6 @@ const pinnedMovieActivity: LetterboxdMovie[] = [
   },
 ]
 
-const artworkStyles = [
-  "from-neutral-300 via-zinc-500 to-stone-950",
-  "from-sky-200 via-blue-500 to-zinc-950",
-  "from-orange-200 via-amber-600 to-stone-950",
-  "from-lime-100 via-emerald-500 to-zinc-900",
-  "from-rose-200 via-red-600 to-zinc-950",
-]
-
 function archiveTransition(delay: number, reducedMotion: boolean) {
   return {
     duration: reducedMotion ? 0 : 0.62,
@@ -184,7 +199,7 @@ function archiveTransition(delay: number, reducedMotion: boolean) {
 
 function archiveInitial(
   reducedMotion: boolean,
-  options: { blur?: number; x?: number; y?: number } = {},
+  options: { blur?: number; x?: number; y?: number } = {}
 ) {
   if (reducedMotion) {
     return { opacity: 1, x: 0, y: 0, filter: "blur(0px)" }
@@ -206,12 +221,10 @@ const archiveVisible = {
 }
 
 function ActivityArtwork({
-  index,
   posterUrl,
   title,
   variant,
 }: {
-  index: number
   posterUrl?: string
   title: string
   variant: "cover" | "poster"
@@ -226,7 +239,7 @@ function ActivityArtwork({
   return (
     <div
       aria-label={title}
-      className={`relative shrink-0 overflow-hidden border border-border/70 shadow-sm ${artworkStyles[index % artworkStyles.length]} ${
+      className={`relative shrink-0 overflow-hidden border border-border/70 shadow-sm ${
         variant === "poster"
           ? "aspect-[2/3] w-10 sm:w-11"
           : "size-12 sm:size-13"
@@ -254,12 +267,10 @@ function ActivityArtwork({
 }
 
 function PinnedArtwork({
-  index,
   posterUrl,
   title,
   variant,
 }: {
-  index: number
   posterUrl?: string
   title: string
   variant: "cover" | "poster"
@@ -274,7 +285,7 @@ function PinnedArtwork({
   return (
     <div
       aria-label={title}
-      className={`relative overflow-hidden border border-border/70 shadow-sm ${artworkStyles[index % artworkStyles.length]} ${
+      className={`relative overflow-hidden border border-border/70 shadow-sm ${
         variant === "poster" ? "aspect-[2/3]" : "aspect-square"
       }`}
     >
@@ -300,16 +311,18 @@ function PinnedArtwork({
 }
 
 function PinnedActivityGrid({
+  albums,
   isMusic,
   reducedMotion,
 }: {
+  albums: MusicAlbum[]
   isMusic: boolean
   reducedMotion: boolean
 }) {
   if (isMusic) {
     return (
       <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-        {pinnedMusicActivity.map((item, index) => (
+        {albums.map((item, index) => (
           <motion.div
             key={item.title}
             className="min-w-0"
@@ -317,13 +330,21 @@ function PinnedActivityGrid({
             animate={archiveVisible}
             transition={archiveTransition(0.1 + index * 0.07, reducedMotion)}
           >
-            <PinnedArtwork index={index} title={item.title} variant="cover" />
+            <PinnedArtwork
+              posterUrl={item.artworkUrl}
+              title={item.title}
+              variant="cover"
+            />
             <div className="mt-2 min-w-0">
               <h3 className="truncate text-sm font-medium text-foreground">
                 {item.title}
               </h3>
-              <p className="truncate text-xs text-muted-foreground">
-                {item.artist}
+              <p className="flex min-w-0 items-center text-xs text-muted-foreground">
+                <span className="truncate">{item.artist}</span>
+                <Dot className="size-3 shrink-0" aria-hidden="true" />
+                <span className="shrink-0 tabular-nums">
+                  {formatMinutes(item.minutes)}
+                </span>
               </p>
             </div>
           </motion.div>
@@ -346,7 +367,6 @@ function PinnedActivityGrid({
           transition={archiveTransition(0.1 + index * 0.07, reducedMotion)}
         >
           <PinnedArtwork
-            index={index}
             posterUrl={item.posterUrl}
             title={item.title}
             variant="poster"
@@ -402,7 +422,7 @@ function MovieActivityList({
       {movies.map((movie, index) => (
         <motion.li
           key={movie.title}
-          className="relative transition-colors hover:bg-muted/20"
+          className="group relative"
           initial={archiveInitial(reducedMotion, { blur: 4, y: 8 })}
           animate={archiveVisible}
           transition={archiveTransition(0.54 + index * 0.045, reducedMotion)}
@@ -424,23 +444,22 @@ function MovieActivityList({
             </span>
             <div className="grid min-h-18 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 py-2.5 sm:min-h-20 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:gap-4 sm:py-3">
               <ActivityArtwork
-                index={index}
                 posterUrl={movie.posterUrl}
                 title={movie.title}
                 variant="poster"
               />
               <div className="min-w-0">
-                <h3 className="truncate font-medium text-foreground underline decoration-transparent decoration-1 underline-offset-3 transition-colors hover:decoration-muted-foreground/40">
+                <h3 className="truncate font-medium text-foreground underline decoration-transparent decoration-1 underline-offset-3 transition-colors group-hover:decoration-muted-foreground/40">
                   {movie.title}
                 </h3>
-                <p className="truncate text-sm text-muted-foreground">
-                  {movie.director ?? movie.review ?? "Watched on Letterboxd"}
-                </p>
-              </div>
-              <div className="ml-auto flex shrink-0 items-center gap-3">
-                <span className="hidden text-sm text-muted-foreground tabular-nums sm:inline">
+                <span className="flex items-center gap-1 truncate text-sm text-muted-foreground">
+                  <p>
+                    {movie.director ?? movie.review ?? "Watched on Letterboxd"},
+                  </p>
                   {movie.releaseDate}
                 </span>
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-3">
                 {movie.rating !== undefined ? (
                   <RatingStars rating={movie.rating} />
                 ) : null}
@@ -461,10 +480,24 @@ function MovieActivityList({
   )
 }
 
-function MusicActivityList({ reducedMotion }: { reducedMotion: boolean }) {
+function formatStreams(streams: number) {
+  return `${streams} ${streams === 1 ? "stream" : "streams"}`
+}
+
+function formatMinutes(minutes: number) {
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
+}
+
+function MusicActivityList({
+  reducedMotion,
+  songs,
+}: {
+  reducedMotion: boolean
+  songs: MusicSong[]
+}) {
   return (
     <ul className="flex flex-col border-y border-border/70">
-      {musicActivity.map((song, index) => (
+      {songs.map((song, index) => (
         <motion.li
           key={song.title}
           className="relative grid grid-cols-[1.6rem_minmax(0,1fr)] gap-2 transition-colors hover:bg-muted/20 sm:grid-cols-[1.9rem_minmax(0,1fr)] sm:gap-2.5"
@@ -472,7 +505,7 @@ function MusicActivityList({ reducedMotion }: { reducedMotion: boolean }) {
           animate={archiveVisible}
           transition={archiveTransition(0.54 + index * 0.045, reducedMotion)}
         >
-          {index < musicActivity.length - 1 ? (
+          {index < songs.length - 1 ? (
             <span
               aria-hidden="true"
               className="absolute right-0 bottom-0 left-[2.1rem] h-px bg-border/70 sm:left-[2.4rem]"
@@ -482,7 +515,11 @@ function MusicActivityList({ reducedMotion }: { reducedMotion: boolean }) {
             {song.rank}
           </span>
           <div className="grid min-h-18 grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-3 py-2.5 sm:min-h-20 sm:grid-cols-[3.25rem_minmax(0,1fr)_auto] sm:gap-4 sm:py-3">
-            <ActivityArtwork index={index} title={song.title} variant="cover" />
+            <ActivityArtwork
+              posterUrl={song.artworkUrl}
+              title={song.title}
+              variant="cover"
+            />
             <div className="min-w-0">
               <h3 className="truncate font-medium text-foreground">
                 {song.title}
@@ -492,7 +529,7 @@ function MusicActivityList({ reducedMotion }: { reducedMotion: boolean }) {
               </p>
             </div>
             <p className="ml-auto shrink-0 text-right text-sm text-muted-foreground tabular-nums">
-              {song.streams}
+              {formatStreams(song.streams)}
             </p>
           </div>
         </motion.li>
@@ -539,10 +576,10 @@ function HomePagePositionAnchor() {
             <span className="mx-1 mb-1 inline-block h-[0.9em] w-[0.9em] align-middle" />
             BAINSA
           </span>
-          . Recently, I&apos;ve also been studying{" "}
+          . <br /> Recently, I&apos;ve also been studying{" "}
           <span className="font-medium text-primary">Stanford CS 224N</span>,
           listening to{" "}
-          <span className="font-medium text-primary">I Follow Rivers</span>, and
+          <span className="font-medium text-primary">Graduation</span>, and
           watching <span className="font-medium text-primary">Obsession</span>.
         </p>
       </div>
@@ -611,12 +648,23 @@ function HomePagePositionAnchor() {
 export function ActivityArchivePage({
   monthLabel,
   movies = fallbackMovieActivity,
+  musicRecap = fallbackMusicRecap,
   title,
   viewAllHref,
 }: ActivityArchivePageProps) {
   const isMusic = title === "Music"
   const movieItems = movies.length > 0 ? movies : fallbackMovieActivity
+  const albumItems = musicRecap.albums.slice(0, 4)
+  const songItems = musicRecap.songs.slice(0, 5)
   const reducedMotion = useReducedMotion() ?? false
+  const listLength = isMusic ? songItems.length : movieItems.length
+  const isExternalViewAll = viewAllHref?.startsWith("http")
+  const footerLinkClassName =
+    "w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50"
+  const footerTransition = archiveTransition(
+    0.56 + listLength * 0.045,
+    reducedMotion
+  )
 
   return (
     <div className="relative flex min-h-svh flex-col">
@@ -641,11 +689,11 @@ export function ActivityArchivePage({
                     {title}
                   </motion.h1>
                   <PinnedActivityGrid
+                    albums={albumItems}
                     isMusic={isMusic}
                     reducedMotion={reducedMotion}
                   />
                 </div>
-
                 <div className="flex flex-col gap-2">
                   <motion.div
                     className="flex items-baseline justify-between gap-4"
@@ -662,29 +710,51 @@ export function ActivityArchivePage({
                   </motion.div>
                   <div className="flex flex-col gap-3">
                     {isMusic ? (
-                      <MusicActivityList reducedMotion={reducedMotion} />
+                      <MusicActivityList
+                        reducedMotion={reducedMotion}
+                        songs={songItems}
+                      />
                     ) : (
                       <MovieActivityList
                         movies={movieItems}
                         reducedMotion={reducedMotion}
                       />
                     )}
-                    {viewAllHref ? (
-                      <motion.a
-                    href={viewAllHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-auto w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50"
-                    initial={archiveInitial(reducedMotion, { blur: 4, y: 8 })}
-                    animate={archiveVisible}
-                    transition={archiveTransition(
-                          0.56 + movieItems.length * 0.045,
-                          reducedMotion,
-                        )}
+                    <motion.div
+                      className="flex items-center justify-between gap-4"
+                      initial={archiveInitial(reducedMotion, {
+                        blur: 4,
+                        y: 8,
+                      })}
+                      animate={archiveVisible}
+                      transition={footerTransition}
+                    >
+                      <button
+                        type="button"
+                        className={`${footerLinkClassName} cursor-pointer`}
+                        onClick={() => window.history.back()}
                       >
-                        View all
-                      </motion.a>
-                    ) : null}
+                        Back
+                      </button>
+                      {viewAllHref && isExternalViewAll ? (
+                        <a
+                          href={viewAllHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={footerLinkClassName}
+                        >
+                          View all
+                        </a>
+                      ) : null}
+                      {viewAllHref && !isExternalViewAll ? (
+                        <Link
+                          href={viewAllHref}
+                          className={footerLinkClassName}
+                        >
+                          View all
+                        </Link>
+                      ) : null}
+                    </motion.div>
                   </div>
                 </div>
               </div>

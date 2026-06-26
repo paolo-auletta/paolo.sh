@@ -19,8 +19,8 @@ const fadeUp = {
 }
 
 const transition = (delay: number) => ({
-  duration: 1.3,
-  delay,
+  duration: 0.95,
+  delay: delay * 0.82,
   ease,
 })
 
@@ -50,6 +50,7 @@ function HoverPreview({ children }: { children: ReactNode }) {
 export default function Page() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [latestMovieTitle, setLatestMovieTitle] = useState("Obsession")
+  const [latestMusicTitle, setLatestMusicTitle] = useState("Graduation")
   const [teaserHeight, setTeaserHeight] = useState(112)
   const teaserRef = useRef<HTMLDivElement>(null)
 
@@ -71,6 +72,23 @@ export default function Page() {
       })
       .catch(() => {
         // Keep the fallback copy when the feed is unavailable.
+      })
+
+    fetch("/api/music/latest")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Unable to load latest music recap")
+        }
+
+        return response.json() as Promise<{ album?: string }>
+      })
+      .then((music) => {
+        if (isMounted && music.album) {
+          setLatestMusicTitle(music.album)
+        }
+      })
+      .catch(() => {
+        // Keep the fallback copy when the recap is unavailable.
       })
 
     return () => {
@@ -226,7 +244,7 @@ export default function Page() {
                       BAINSA
                     </a>
                   </HoverPreview>
-                  . Recently, I&apos;ve also been studying{" "}
+                  .<br /> Recently, I&apos;ve also been studying{" "}
                   <HoverPreview>
                     <a
                       href="https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1246/"
@@ -242,7 +260,7 @@ export default function Page() {
                       href="/music"
                       className="font-medium text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
                     >
-                      I Follow Rivers
+                      {latestMusicTitle}
                     </Link>
                   </HoverPreview>
                   , and watching{" "}
