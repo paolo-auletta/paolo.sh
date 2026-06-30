@@ -3,7 +3,9 @@ import { Caveat, Geist, Geist_Mono, Libre_Baskerville } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 
 import "./globals.css"
+import { PagePrefetcher } from "@/components/page-prefetcher"
 import { ThemeProvider } from "@/components/theme-provider"
+import { musicArchiveNavigation } from "@/lib/music"
 import { cn } from "@/lib/utils"
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" })
@@ -25,6 +27,24 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://paolo.sh"),
 }
 
+const staticPageHrefs = [
+  "/",
+  "/album",
+  "/miky",
+  "/movies",
+  "/music",
+  "/music/all",
+  "/projects",
+  "/research",
+]
+
+const pagePrefetchHrefs = [
+  ...staticPageHrefs,
+  ...musicArchiveNavigation.flatMap(({ months, year }) =>
+    months.map((month) => `/music/all?year=${year}&month=${month.slug}`)
+  ),
+]
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,7 +64,10 @@ export default function RootLayout({
     >
       <body>
         <Analytics />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <PagePrefetcher hrefs={pagePrefetchHrefs} />
+        </ThemeProvider>
       </body>
     </html>
   )
