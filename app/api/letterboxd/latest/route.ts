@@ -8,6 +8,7 @@ export async function GET() {
   const movie = await getLatestLikedRatedLetterboxdMovie()
 
   return NextResponse.json({
+    posterUrl: movie?.posterUrl,
     title: movie?.title ?? "Obsession",
   })
 }

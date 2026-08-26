@@ -560,19 +560,17 @@ function HomePagePositionAnchor() {
           {"\u2013"} I like to make people feel something through my work.
         </p>
         <p className="items-center text-muted-foreground">
-          Currently, I&apos;m working at{" "}
+          Currently, I&apos;m doing research at{" "}
           <span className="inline font-medium whitespace-nowrap text-primary">
-            <span className="mx-1 inline-block h-[1em] w-[1.45em] -translate-y-px align-middle" />
-            BarCloud
+            <span className="mr-1 mb-0.5 inline-block h-[1.05em] w-[0.88em] align-middle" />
+            Sapienza
           </span>{" "}
           and managing{" "}
           <span className="inline font-medium whitespace-nowrap text-primary">
             <span className="mx-1 mb-1 inline-block h-[0.9em] w-[0.9em] align-middle" />
             BAINSA
           </span>
-          . <br /> Recently, I&apos;ve also been studying{" "}
-          <span className="font-medium text-primary">Stanford CS 224N</span>,
-          listening to{" "}
+          . <br /> Recently, I&apos;ve also been listening to{" "}
           <span className="font-medium text-primary">Graduation</span>, and
           watching <span className="font-medium text-primary">Obsession</span>.
         </p>
@@ -596,14 +594,17 @@ function HomePagePositionAnchor() {
         </div>
         <div className="flex flex-col gap-2 overflow-hidden">
           <p className="items-center text-muted-foreground">
-            <span>I&apos;m currently in Los Angeles, interning at </span>
+            <span>I&apos;m currently doing research at </span>
+            <span className="inline font-medium whitespace-nowrap text-primary">
+              Sapienza
+            </span>
+            <span>. Before that, I was in Los Angeles, interning at </span>
             <span className="inline font-medium whitespace-nowrap text-primary">
               BarCloud
             </span>{" "}
             <span>
-              as a Software Engineer, where I&apos;m building frontier AI
-              systems that automate complex workflows. Before that, I interned
-              at{" "}
+              as a Software Engineer, where I built frontier AI systems that
+              automate complex workflows. Earlier, I interned at{" "}
             </span>
             <span className="inline font-medium whitespace-nowrap text-primary">
               DataPizza
