@@ -42,16 +42,39 @@ export default function MutePrivacyPage() {
 
             <Section title="What leaves your browser">
               <p>
-                To decide whether an item matches, Mute sends the visible text
-                of candidate items on the page, the page title, the hostname,
-                and your rule text to the provider you chose — TypeSafe, or
-                OpenRouter if your key starts with <code>sk-or-</code>. That is
-                the only network request the extension makes.
+                To decide whether an item matches, Mute sends four things to
+                the provider you chose, TypeSafe or OpenRouter if your key
+                starts with <code>sk-or-</code>. That is the only network
+                request the extension makes.
+              </p>
+              <ul className="flex list-disc flex-col gap-2 pl-5">
+                <li>
+                  The visible text of candidate items on the page. On a site
+                  where your messages look like a feed, a webmail inbox or a
+                  chat list, that text can include your own messages.
+                  Blocklist those sites and nothing on them is read.
+                </li>
+                <li>
+                  The page title and the hostname, which is what tells the
+                  model whether it is reading a news feed or a shop.
+                </li>
+                <li>Your rules, as you wrote them.</li>
+                <li>
+                  Your API key, as the authorization header on the request. It
+                  goes to your provider and nowhere else.
+                </li>
+              </ul>
+              <p>
+                It never sends URLs or query strings, cookies, form input,
+                passwords, or a record of the pages you visited. There is no
+                analytics or telemetry of any kind.
               </p>
               <p>
-                It never sends URLs or query strings, cookies, browsing
-                history, form input, passwords, or anything from a site on your
-                blocklist. There is no analytics or telemetry of any kind.
+                The Chrome Web Store listing declares this as website content,
+                authentication information, web history, and personal
+                communications. The last two are listed because the page title
+                travels with every request and because a chat or mail page can
+                be shaped like a feed. None of it reaches me.
               </p>
             </Section>
 
