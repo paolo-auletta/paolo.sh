@@ -2,7 +2,7 @@ import type { Metadata } from "next"
 import type { ReactNode } from "react"
 
 export const metadata: Metadata = {
-  title: "Mute",
+  title: "mute",
   description:
     "A Chrome extension that hides what you describe in a sentence, on every site.",
 }

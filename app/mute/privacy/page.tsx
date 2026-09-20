@@ -2,9 +2,9 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Mute — privacy",
+  title: "mute — privacy",
   description:
-    "What the Mute extension sends, where it goes, and what it keeps.",
+    "What the mute extension sends, where it goes, and what it keeps.",
 }
 
 const UPDATED = "20 September 2026"
@@ -32,17 +32,17 @@ export default function MutePrivacyPage() {
           <div className="mx-auto flex max-w-xl flex-col gap-8 text-base leading-relaxed">
             <div className="flex flex-col gap-3">
               <h1 className="text-xl font-medium text-foreground">
-                Mute — privacy
+                mute — privacy
               </h1>
               <p className="text-muted-foreground">
-                Mute has one purpose: hide feed items that match rules you
+                mute has one purpose: hide feed items that match rules you
                 write. Everything below describes the extension only.
               </p>
             </div>
 
             <Section title="What leaves your browser">
               <p>
-                To decide whether an item matches, Mute sends four things to
+                To decide whether an item matches, mute sends four things to
                 the provider you chose, TypeSafe or OpenRouter if your key
                 starts with <code>sk-or-</code>. That is the only network
                 request the extension makes.

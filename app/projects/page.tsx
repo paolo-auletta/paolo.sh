@@ -25,7 +25,7 @@ export default function ProjectsPage() {
                 Better Skills
               </a>
               <Link href="/mute" className={linkClassName}>
-                Mute
+                mute
               </Link>
             </div>
             <Link

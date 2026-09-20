@@ -77,7 +77,7 @@ export default function MutePage() {
                 className="text-xl font-medium text-foreground"
                 {...entrance(0)}
               >
-                Mute
+                mute
               </motion.h1>
               <motion.p className="text-muted-foreground" {...entrance(0.15)}>
                 A Chrome extension that hides what you describe in a sentence.
