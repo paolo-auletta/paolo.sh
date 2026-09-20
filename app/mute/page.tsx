@@ -120,12 +120,18 @@ export default function MutePage() {
               </p>
             </motion.div>
 
-            <motion.div {...entrance(0.6)}>
+            <motion.div className="flex items-center gap-4" {...entrance(0.6)}>
               <Link
                 href="/"
                 className="w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50"
               >
                 Back
+              </Link>
+              <Link
+                href="/mute/privacy"
+                className="w-fit text-sm text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50"
+              >
+                Privacy
               </Link>
             </motion.div>
           </div>
