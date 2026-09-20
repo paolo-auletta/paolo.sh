@@ -32,6 +32,7 @@ const staticPageHrefs = [
   "/album",
   "/miky",
   "/movies",
+  "/mute",
   "/music",
   "/music/all",
   "/projects",

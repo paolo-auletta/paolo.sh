@@ -1,0 +1,373 @@
+/*
+ * Two things are replicated here, both on purpose and both to the pixel where
+ * it matters: X's own timeline chrome, and the veil the extension actually
+ * paints over a matching post (blur(18px) saturate(0.75), a radial wash, and
+ * the 14px label that says which rule hid it). Values come from the
+ * extension's src/content/overlay.ts, not from an approximation of it.
+ */
+
+.frame {
+  --x-bg: #ffffff;
+  --x-text: #0f1419;
+  --x-secondary: #536471;
+  --x-border: #eff3f4;
+  --x-hover: rgba(0, 0, 0, 0.03);
+  --x-blue: #1d9bf0;
+  --x-like: #f91880;
+  --x-repost: #00ba7c;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  overflow: hidden;
+  border: 1px solid var(--x-border);
+  border-radius: 16px;
+  background: var(--x-bg);
+  color: var(--x-text);
+  font-family: var(--font-sans), -apple-system, system-ui, sans-serif;
+}
+
+:global(.dark) .frame {
+  --x-bg: #000000;
+  --x-text: #e7e9ea;
+  --x-secondary: #71767b;
+  --x-border: #2f3336;
+  --x-hover: rgba(255, 255, 255, 0.03);
+}
+
+/* X's tab bar: equal halves, centred labels, a 4px rounded blue rail. */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--x-border);
+}
+
+.tab {
+  display: flex;
+  flex: 1;
+  align-items: stretch;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: var(--x-secondary);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tab:hover {
+    background: var(--x-hover);
+  }
+}
+
+.tabLabel {
+  position: relative;
+  padding: 16px 8px 15px;
+}
+
+.tab[data-active="true"] {
+  color: var(--x-text);
+  font-weight: 700;
+}
+
+.tab[data-active="true"] .tabLabel::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--x-blue);
+}
+
+.scroll {
+  max-height: 24.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--x-border) transparent;
+}
+
+.post {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--x-border);
+}
+
+.post:last-child {
+  border-bottom: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .post[data-hidden="false"]:hover {
+    background: var(--x-hover);
+  }
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  object-fit: cover;
+}
+
+.body {
+  min-width: 0;
+  flex: 1;
+  transition: filter 460ms var(--ease);
+}
+
+.post[data-hidden="true"] .body {
+  user-select: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  line-height: 20px;
+}
+
+.name {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  width: 18.75px;
+  height: 18.75px;
+  flex-shrink: 0;
+  fill: var(--x-blue);
+}
+
+.meta {
+  overflow: hidden;
+  color: var(--x-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text {
+  margin: 2px 0 0;
+  font-size: 15px;
+  line-height: 20px;
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  max-width: 425px;
+  margin-top: 12px;
+  justify-content: space-between;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--x-secondary);
+  font-size: 13px;
+  line-height: 16px;
+}
+
+.action svg {
+  width: 18.75px;
+  height: 18.75px;
+  fill: currentColor;
+}
+
+/* ------------------------------------------------------------------ the veil */
+
+.veil {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.veil[data-hidden="false"] {
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.floor {
+  backdrop-filter: blur(18px) saturate(0.75);
+  -webkit-backdrop-filter: blur(18px) saturate(0.75);
+  transition:
+    backdrop-filter 460ms var(--ease),
+    -webkit-backdrop-filter 460ms var(--ease);
+}
+
+.veil[data-hidden="false"] .floor {
+  backdrop-filter: blur(0px) saturate(1);
+  -webkit-backdrop-filter: blur(0px) saturate(1);
+}
+
+.wash {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--x-bg) 45%, transparent),
+    color-mix(in srgb, var(--x-bg) 20%, transparent)
+  );
+  transition: opacity 460ms var(--ease);
+}
+
+.veil[data-hidden="false"] .wash {
+  opacity: 0;
+}
+
+.label {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  max-width: calc(100% - 16px);
+  align-items: stretch;
+  padding: 3px;
+  border-radius: 14px;
+  gap: 2px;
+  background: var(--x-bg);
+  box-shadow: 0 1px 4px #0003;
+  color: var(--x-text);
+  /* Split, not shorthand: `font: 500 12px/1.4 inherit` is invalid and the
+     whole declaration gets dropped, which is what made this label 15px. */
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition:
+    opacity 160ms var(--ease),
+    transform 160ms var(--ease);
+}
+
+.veil[data-hidden="false"] .label {
+  opacity: 0;
+  transform: scale(0.98);
+  transition-duration: 120ms;
+}
+
+.labelRule {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  padding: 6px 8px 6px 10px;
+  border-radius: 999px;
+  gap: 7px;
+}
+
+.labelIcon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  fill: none;
+  opacity: 0.55;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.labelText {
+  overflow: hidden;
+  opacity: 0.62;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.labelShow {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--x-text) 8%, transparent);
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background-color 140ms var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .veil:hover .labelShow {
+    background: color-mix(in srgb, var(--x-text) 16%, transparent);
+  }
+}
+
+.veil:focus-visible {
+  outline: 2px solid var(--x-blue);
+  outline-offset: -2px;
+}
+
+/* ------------------------------------------- the marker left after revealing */
+
+.pill {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  display: flex;
+  max-width: calc(100% - 12px);
+  flex-wrap: wrap;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--x-bg);
+  box-shadow: 0 1px 4px #0003;
+  color: var(--x-text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  transition: opacity 160ms var(--ease);
+}
+
+.pill[data-entering="true"] {
+  opacity: 0;
+}
+
+.pillButton {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pillButton:hover {
+    background: color-mix(in srgb, var(--x-text) 10%, var(--x-bg));
+  }
+}
+
+.pillButton:focus-visible {
+  outline: 2px solid var(--x-blue);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body,
+  .floor,
+  .wash,
+  .label,
+  .pill {
+    transition-duration: 160ms;
+  }
+
+  .veil[data-hidden="false"] .label {
+    transform: none;
+  }
+}
