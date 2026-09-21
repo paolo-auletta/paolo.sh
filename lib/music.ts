@@ -60,6 +60,345 @@ const monthOrder = [
 
 const monthlyMusicRecaps: RawMusicRecap[] = [
   {
+    monthLabel: "August 2026",
+    albums: [
+      {
+        title: "Revolver",
+        artist: "The Beatles",
+        minutes: 66,
+      },
+      {
+        title: "The Dark Side of the Moon",
+        artist: "Pink Floyd",
+        minutes: 61,
+      },
+      {
+        title: "Let It Be... Naked",
+        artist: "The Beatles",
+        minutes: 51,
+      },
+      {
+        title: "Abbey Road",
+        artist: "The Beatles",
+        minutes: 50,
+      },
+      {
+        title: "Magical Mystery Tour",
+        artist: "The Beatles",
+        minutes: 36,
+      },
+      {
+        title: "RAM",
+        artist: "Paul & Linda McCartney",
+        minutes: 34,
+      },
+      {
+        title: "The Velvet Underground & Nico",
+        artist: "The Velvet Underground & Nico",
+        minutes: 33,
+      },
+      {
+        title: "Rubber Soul",
+        artist: "The Beatles",
+        minutes: 33,
+      },
+      {
+        title: "Animals",
+        artist: "Pink Floyd",
+        minutes: 23,
+      },
+      {
+        title: "In the Court of the Crimson King",
+        artist: "King Crimson",
+        minutes: 19,
+      },
+      {
+        title: "Nero a Metà",
+        artist: "Pino Daniele",
+        minutes: 6,
+      },
+      {
+        title: "Amnesiac",
+        artist: "Radiohead",
+        minutes: 4,
+      },
+      {
+        title: "Led Zeppelin",
+        artist: "Led Zeppelin",
+        minutes: 1,
+      },
+      {
+        title: "Yellow Submarine",
+        artist: "The Beatles",
+        minutes: 1,
+      },
+    ],
+    songs: [
+      {
+        title: "Dig a Pony",
+        albumTitle: "Let It Be... Naked",
+        artist: "The Beatles",
+        streams: 10,
+      },
+      {
+        title: "I've Got a Feeling",
+        albumTitle: "Let It Be... Naked",
+        artist: "The Beatles",
+        streams: 10,
+      },
+      {
+        title: "Uncle Albert / Admiral Halsey (Remastered 2012)",
+        albumTitle: "RAM",
+        artist: "Paul & Linda McCartney",
+        streams: 8,
+      },
+      {
+        title: "I Am the Walrus",
+        albumTitle: "Magical Mystery Tour",
+        artist: "The Beatles",
+        streams: 8,
+      },
+      {
+        title: "I Want You (She's So Heavy) [2019 Mix]",
+        albumTitle: "Abbey Road",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Two of Us",
+        albumTitle: "Let It Be... Naked",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "You Won't See Me",
+        albumTitle: "Rubber Soul",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "Paperback Writer",
+        albumTitle: "Past Masters",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "For No One (2022 Mix)",
+        albumTitle: "Revolver",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "Norwegian Wood (This Bird Has Flown)",
+        albumTitle: "Rubber Soul",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "Beware of Darkness (2020 Mix)",
+        albumTitle: "All Things Must Pass",
+        artist: "George Harrison",
+        streams: 5,
+      },
+      {
+        title: "Across the Universe",
+        albumTitle: "Let It Be... Naked",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "Long Haired Lady (Remastered 2012)",
+        albumTitle: "RAM",
+        artist: "Paul & Linda McCartney",
+        streams: 5,
+      },
+      {
+        title: "Another Day (Remastered 2012)",
+        albumTitle: "RAM",
+        artist: "Paul & Linda McCartney",
+        streams: 5,
+      },
+      {
+        title: "Get Back",
+        albumTitle: "Let It Be... Naked",
+        artist: "The Beatles",
+        streams: 5,
+      },
+    ],
+  },
+  {
+    monthLabel: "July 2026",
+    albums: [
+      {
+        title: "Wish You Were Here",
+        artist: "Pink Floyd",
+        minutes: 69,
+      },
+      {
+        title: "On te l'avait dit",
+        artist: "Voilaaa",
+        minutes: 66,
+      },
+      {
+        title: "RAM",
+        artist: "Paul & Linda McCartney",
+        minutes: 64,
+      },
+      {
+        title: "Band on the Run",
+        artist: "Paul McCartney & Wings",
+        minutes: 51,
+      },
+      {
+        title: "Take'Em To the Cleaners",
+        artist: "Consequence",
+        minutes: 49,
+      },
+      {
+        title: "ABC",
+        artist: "Jackson 5",
+        minutes: 32,
+      },
+      {
+        title: "First Light",
+        artist: "Makoto Matsushita",
+        minutes: 23,
+      },
+      {
+        title: "Late Registration",
+        artist: "Kanye West",
+        minutes: 19,
+      },
+      {
+        title: "The Velvet Underground & Nico",
+        artist: "The Velvet Underground & Nico",
+        minutes: 16,
+      },
+      {
+        title: "Invincible",
+        artist: "Michael Jackson",
+        minutes: 15,
+      },
+      {
+        title: "Revolver",
+        artist: "The Beatles",
+        minutes: 7,
+      },
+      {
+        title: "Una donna per amico",
+        artist: "Lucio Battisti",
+        minutes: 5,
+      },
+      {
+        title: "The Essential Jacksons",
+        artist: "The Jacksons",
+        minutes: 5,
+      },
+      {
+        title: "Help!",
+        artist: "The Beatles",
+        minutes: 4,
+      },
+      {
+        title: "Anthology 1",
+        artist: "The Beatles",
+        minutes: 1,
+      },
+    ],
+    songs: [
+      {
+        title: "Another Day (Remastered 2012)",
+        albumTitle: "RAM",
+        artist: "Paul & Linda McCartney",
+        streams: 13,
+      },
+      {
+        title: "Ticket to Ride",
+        albumTitle: "Help!",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Besame Mucho (June 1962 Version)",
+        albumTitle: "Anthology 1",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Carry That Weight (2019 Mix)",
+        albumTitle: "Abbey Road",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Something (Live in Japan, 1991)",
+        albumTitle: "Live in Japan",
+        artist: "George Harrison",
+        streams: 6,
+      },
+      {
+        title: "Wait",
+        albumTitle: "Rubber Soul",
+        artist: "The Beatles",
+        streams: 6,
+      },
+      {
+        title: "On te l'avait dit (feat. Pat Kalla)",
+        albumTitle: "On te l'avait dit",
+        artist: "Voilaaa",
+        streams: 5,
+      },
+      {
+        title: "I Say I' Sto Ccà",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 5,
+      },
+      {
+        title: "Dear Prudence",
+        albumTitle: "The Beatles",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "7 e 40",
+        albumTitle: "Una donna per amico",
+        artist: "Lucio Battisti",
+        streams: 5,
+      },
+      {
+        title: "Oh! Darling (2019 Mix)",
+        albumTitle: "Abbey Road",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "You Won't See Me",
+        albumTitle: "Rubber Soul",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "Girl",
+        albumTitle: "Rubber Soul",
+        artist: "The Beatles",
+        streams: 5,
+      },
+      {
+        title: "Prendila così",
+        albumTitle: "Una donna per amico",
+        artist: "Lucio Battisti",
+        streams: 4,
+      },
+      {
+        title: "Can You Feel It",
+        albumTitle: "The Essential Jacksons",
+        artist: "The Jacksons",
+        streams: 4,
+      },
+    ],
+  },
+  {
     monthLabel: "June 2026",
     albums: [
       {
@@ -78,7 +417,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 23,
       },
       {
-        title: "Too Low For Zero (Bonus Track Version)",
+        title: "Too Low For Zero",
         artist: "Elton John",
         minutes: 18,
       },
@@ -103,7 +442,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 10,
       },
       {
-        title: "Superunknown (Super Deluxe Edition)",
+        title: "Superunknown",
         artist: "Soundgarden",
         minutes: 8,
       },
@@ -205,7 +544,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "Wah-Wah (2014 Remaster)",
-        albumTitle: "All Things Must Pass (2014 Remaster)",
+        albumTitle: "All Things Must Pass",
         artist: "George Harrison",
         streams: 3,
       },
@@ -229,7 +568,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "Wah-Wah (2020 Mix)",
-        albumTitle: "All Things Must Pass (50th Anniversary)",
+        albumTitle: "All Things Must Pass",
         artist: "George Harrison",
         streams: 3,
       },
@@ -244,7 +583,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 50,
       },
       {
-        title: "Abbey Road (Super Deluxe Edition)",
+        title: "Abbey Road",
         artist: "The Beatles",
         minutes: 30,
       },
@@ -452,7 +791,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 10,
       },
       {
-        title: "Hybrid Theory (Deluxe Edition)",
+        title: "Hybrid Theory",
         artist: "LINKIN PARK",
         minutes: 6,
       },
@@ -505,19 +844,19 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "Golden Slumbers (2019 Mix)",
-        albumTitle: "Abbey Road (Super Deluxe Edition)",
+        albumTitle: "Abbey Road",
         artist: "The Beatles",
         streams: 6,
       },
       {
         title: "She Came In Through the Bathroom Window (2019 Mix)",
-        albumTitle: "Abbey Road (Super Deluxe Edition)",
+        albumTitle: "Abbey Road",
         artist: "The Beatles",
         streams: 5,
       },
       {
         title: "Carry That Weight (2019 Mix)",
-        albumTitle: "Abbey Road (Super Deluxe Edition)",
+        albumTitle: "Abbey Road",
         artist: "The Beatles",
         streams: 5,
       },
@@ -535,7 +874,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "And Your Bird Can Sing (2022 Mix)",
-        albumTitle: "Revolver (Super Deluxe)",
+        albumTitle: "Revolver",
         artist: "The Beatles",
         streams: 4,
       },
@@ -569,7 +908,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
     monthLabel: "February 2026",
     albums: [
       {
-        title: "The Forever Story (Extended Version)",
+        title: "The Forever Story",
         artist: "JID",
         minutes: 71,
       },
@@ -686,7 +1025,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "And Your Bird Can Sing (2022 Mix)",
-        albumTitle: "Revolver (Super Deluxe)",
+        albumTitle: "Revolver",
         artist: "The Beatles",
         streams: 4,
       },
@@ -701,7 +1040,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 95,
       },
       {
-        title: "All Things Must Pass (50th Anniversary)",
+        title: "All Things Must Pass",
         artist: "George Harrison",
         minutes: 74,
       },
@@ -721,7 +1060,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 13,
       },
       {
-        title: "Year of the Cat (45th Anniversary)",
+        title: "Year of the Cat",
         artist: "Al Stewart",
         minutes: 12,
       },
@@ -741,7 +1080,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 6,
       },
       {
-        title: "Travelling Without Moving (20th Anniversary)",
+        title: "Travelling Without Moving",
         artist: "Jamiroquai",
         minutes: 5,
       },
@@ -786,7 +1125,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "And Your Bird Can Sing (2022 Mix)",
-        albumTitle: "Revolver (Super Deluxe)",
+        albumTitle: "Revolver",
         artist: "The Beatles",
         streams: 10,
       },
@@ -798,7 +1137,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "For No One (2022 Mix)",
-        albumTitle: "Revolver (Super Deluxe)",
+        albumTitle: "Revolver",
         artist: "The Beatles",
         streams: 9,
       },
@@ -858,7 +1197,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
       },
       {
         title: "She Came In Through the Bathroom Window (2019 Mix)",
-        albumTitle: "Abbey Road (Super Deluxe Edition)",
+        albumTitle: "Abbey Road",
         artist: "The Beatles",
         streams: 7,
       },
