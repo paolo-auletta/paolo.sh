@@ -42,14 +42,27 @@ const externalLinkProps = {
 const skyAccentClassName =
   "bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text font-medium text-transparent"
 
+/**
+ * Links are the only dark text in the copy. A faint underline marks them,
+ * filling in on hover.
+ */
 const inlineLinkClassName =
-  "inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+  "inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/12 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+
+/**
+ * Asides (what I'm listening to and watching): titles of works, set in
+ * italics in the sentence's own grey. Still links, with a preview on hover.
+ */
+const asideLinkClassName =
+  "inline cursor-pointer whitespace-nowrap italic transition-colors hover:text-foreground"
 
 type LinkPreviewProps = {
   children: ReactNode
   height: number
   href: string
   internal?: boolean
+  /** A quieter aside link instead of a regular one. */
+  quiet?: boolean
   src?: string
   width: number
 }
@@ -59,6 +72,7 @@ function LinkPreview({
   height,
   href,
   internal = false,
+  quiet = false,
   src,
   width,
 }: LinkPreviewProps) {
@@ -67,12 +81,13 @@ function LinkPreview({
 
   useEffect(() => setIsMounted(true), [])
 
+  const className = quiet ? asideLinkClassName : inlineLinkClassName
   const trigger = internal ? (
-    <Link href={href} className={inlineLinkClassName}>
+    <Link href={href} className={className}>
       {children}
     </Link>
   ) : (
-    <a href={href} {...externalLinkProps} className={inlineLinkClassName}>
+    <a href={href} {...externalLinkProps} className={className}>
       {children}
     </a>
   )
@@ -269,7 +284,7 @@ export default function Page() {
         <a
           href="https://datapizza.tech/en"
           {...externalLinkProps}
-          className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+          className={inlineLinkClassName}
         >
           <svg
             viewBox="0 0 210 210"
@@ -285,7 +300,7 @@ export default function Page() {
         <a
           href="https://datapizza.tech/it/dualintelligence/"
           {...externalLinkProps}
-          className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+          className={inlineLinkClassName}
         >
           DualOS
         </a>
@@ -433,6 +448,7 @@ export default function Page() {
                     height={220}
                     href="/music"
                     internal
+                    quiet
                     src={latestMusicArtwork}
                     width={220}
                   >
@@ -443,6 +459,7 @@ export default function Page() {
                     height={231}
                     href="/movies"
                     internal
+                    quiet
                     src={latestMoviePoster}
                     width={154}
                   >
@@ -461,22 +478,18 @@ export default function Page() {
               >
                 <span>You can check out my </span>
                 <Link href="/projects">
-                  <span className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground">
-                    personal projects
-                  </span>
+                  <span className={inlineLinkClassName}>personal projects</span>
                 </Link>
                 <span> and </span>
                 <Link href="/research">
-                  <span className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground">
-                    research
-                  </span>
+                  <span className={inlineLinkClassName}>research</span>
                 </Link>
                 <span>
                   . You can reach me on{" "}
                   <a
                     href="https://www.linkedin.com/in/paoloauletta/"
                     {...externalLinkProps}
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    className={inlineLinkClassName}
                   >
                     <Image
                       src="/linkedin.svg"
@@ -490,7 +503,7 @@ export default function Page() {
                   or via{" "}
                   <a
                     href="mailto:ciao@paolo.sh"
-                    className="inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
+                    className={inlineLinkClassName}
                   >
                     <svg
                       className="mr-1 mb-0.5 inline-block size-4 align-middle"
