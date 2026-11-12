@@ -60,6 +60,275 @@ const monthOrder = [
 
 const monthlyMusicRecaps: RawMusicRecap[] = [
   {
+    monthLabel: "October 2026",
+    albums: [
+      {
+        title: "Cloud Nine",
+        artist: "George Harrison",
+        minutes: 41,
+      },
+      {
+        title: "Bella 'mbriana",
+        artist: "Pino Daniele",
+        minutes: 40,
+      },
+      {
+        title: "OK Computer",
+        artist: "Radiohead",
+        minutes: 15,
+      },
+      {
+        title: "Unplugged",
+        artist: "Eric Clapton",
+        minutes: 8,
+      },
+      {
+        title: "OK Computer OKNOTOK 1997 2017",
+        artist: "Radiohead",
+        minutes: 8,
+      },
+      {
+        title: "Rubber Soul",
+        artist: "The Beatles",
+        minutes: 6,
+      },
+      {
+        title: "Birth of the Cool",
+        artist: "Miles Davis",
+        minutes: 3,
+      },
+    ],
+    songs: [
+      {
+        title: "Have you seen my shoes (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 10,
+      },
+      {
+        title: "Puorteme a casa mia (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 9,
+      },
+      {
+        title: "Putesse essere allero",
+        albumTitle: "Pino Daniele",
+        artist: "Pino Daniele",
+        streams: 9,
+      },
+      {
+        title: "Besame Mucho (June 1962 Version)",
+        albumTitle: "Anthology 1",
+        artist: "The Beatles",
+        streams: 8,
+      },
+      {
+        title: "Quanno Chiove",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Viento 'e terra (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Ma che ho (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "With A Little Help From My Friends (2017 Mix)",
+        albumTitle: "Sgt. Pepper's Lonely Hearts Club Band",
+        artist: "The Beatles",
+        streams: 7,
+      },
+      {
+        title: "Je sto vicino a te",
+        albumTitle: "Pino Daniele",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Ue man!",
+        albumTitle: "Pino Daniele",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "E So' Cuntento 'E Sta'",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "Tutta n'ata storia (2021 Remaster)",
+        albumTitle: "Bella 'mbriana",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "A Me Me Piace 'O Blues",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "Puozze Passà' Nu Guaio",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "Nun Me Scoccià",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 5,
+      },
+    ],
+  },
+  {
+    monthLabel: "September 2026",
+    albums: [
+      {
+        title: "Nero a Metà",
+        artist: "Pino Daniele",
+        minutes: 73,
+      },
+      {
+        title: "Pino Daniele",
+        artist: "Pino Daniele",
+        minutes: 40,
+      },
+      {
+        title: "Vai mo'",
+        artist: "Pino Daniele",
+        minutes: 38,
+      },
+      {
+        title: "RAM",
+        artist: "Paul & Linda McCartney",
+        minutes: 28,
+      },
+      {
+        title: "Red Rose Speedway",
+        artist: "Paul McCartney & Wings",
+        minutes: 14,
+      },
+      {
+        title: "Abbey Road",
+        artist: "The Beatles",
+        minutes: 13,
+      },
+      {
+        title: "Bella 'mbriana",
+        artist: "Pino Daniele",
+        minutes: 8,
+      },
+      {
+        title: "Imagine",
+        artist: "John Lennon",
+        minutes: 2,
+      },
+    ],
+    songs: [
+      {
+        title: "Nun Me Scoccià",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 17,
+      },
+      {
+        title: "Sotto 'O Sole",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 16,
+      },
+      {
+        title: "A Me Me Piace 'O Blues",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 13,
+      },
+      {
+        title: "Puozze Passà' Nu Guaio",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 11,
+      },
+      {
+        title: "Puorteme a casa mia (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 9,
+      },
+      {
+        title: "A Testa In Giù",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 9,
+      },
+      {
+        title: "Je sto vicino a te",
+        albumTitle: "Pino Daniele",
+        artist: "Pino Daniele",
+        streams: 8,
+      },
+      {
+        title: "I Say I' Sto Ccà",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Viento 'e terra (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Putesse essere allero",
+        albumTitle: "Pino Daniele",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "E So' Cuntento 'E Sta'",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Un giorno che non va (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 7,
+      },
+      {
+        title: "Voglio Di Più",
+        albumTitle: "Nero a Metà",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "Che te ne fotte (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+      {
+        title: "Ma che ho (2021 Remaster)",
+        albumTitle: "Vai mo'",
+        artist: "Pino Daniele",
+        streams: 6,
+      },
+    ],
+  },
+  {
     monthLabel: "August 2026",
     albums: [
       {
@@ -1055,7 +1324,7 @@ const monthlyMusicRecaps: RawMusicRecap[] = [
         minutes: 42,
       },
       {
-        title: "\"Awaken, My Love!\"",
+        title: '"Awaken, My Love!"',
         artist: "Childish Gambino",
         minutes: 13,
       },
@@ -1251,13 +1520,7 @@ function getMusicArchiveNavigation(recaps: RawMusicRecap[]) {
   }))
 }
 
-function getRawMusicRecap({
-  month,
-  year,
-}: {
-  month?: string
-  year?: string
-}) {
+function getRawMusicRecap({ month, year }: { month?: string; year?: string }) {
   const sortedRecaps = sortRecapsByDate(monthlyMusicRecaps)
 
   return (
@@ -1313,7 +1576,10 @@ function getTitleScore(candidateTitle: string, targetTitle: string) {
   return 0
 }
 
-function getArtistScore(candidateArtist: string | undefined, targetArtist: string) {
+function getArtistScore(
+  candidateArtist: string | undefined,
+  targetArtist: string
+) {
   if (!candidateArtist) return 0
 
   const candidate = normalizeMusicText(candidateArtist)
@@ -1322,7 +1588,9 @@ function getArtistScore(candidateArtist: string | undefined, targetArtist: strin
   if (candidate === target) return 5
   if (candidate.includes(target) || target.includes(candidate)) return 4
 
-  const targetLeadArtist = normalizeMusicText(targetArtist.split(/[,&]/)[0] ?? "")
+  const targetLeadArtist = normalizeMusicText(
+    targetArtist.split(/[,&]/)[0] ?? ""
+  )
   if (targetLeadArtist && candidate.includes(targetLeadArtist)) return 3
 
   return 0
@@ -1330,9 +1598,11 @@ function getArtistScore(candidateArtist: string | undefined, targetArtist: strin
 
 function pickBestArtwork<T>(
   candidates: T[],
-  getCandidate: (
-    candidate: T,
-  ) => { artist?: string; artworkUrl?: string; title?: string },
+  getCandidate: (candidate: T) => {
+    artist?: string
+    artworkUrl?: string
+    title?: string
+  },
   {
     artist,
     minimumScore = 10,
@@ -1341,7 +1611,7 @@ function pickBestArtwork<T>(
     artist: string
     minimumScore?: number
     title: string
-  },
+  }
 ) {
   const ranked = candidates
     .map((candidate) => {
@@ -1353,7 +1623,9 @@ function pickBestArtwork<T>(
           getArtistScore(metadata.artist, artist),
       }
     })
-    .filter((candidate) => candidate.artworkUrl && candidate.score >= minimumScore)
+    .filter(
+      (candidate) => candidate.artworkUrl && candidate.score >= minimumScore
+    )
     .sort((a, b) => b.score - a.score)
 
   return ranked[0]?.artworkUrl
@@ -1406,7 +1678,7 @@ async function getDeezerArtwork({
             artworkUrl: candidate.cover_xl,
             title: candidate.title,
           }),
-          { artist, title },
+          { artist, title }
         )
 
         if (artworkUrl) return artworkUrl
@@ -1429,7 +1701,7 @@ async function getDeezerArtwork({
           artworkUrl: candidate.album?.cover_xl,
           title: candidate.title ?? candidate.title_short,
         }),
-        { artist, title },
+        { artist, title }
       )
 
       if (artworkUrl) return artworkUrl
@@ -1482,9 +1754,10 @@ async function getItunesArtwork({
       (candidate) => ({
         artist: candidate.collectionArtistName ?? candidate.artistName,
         artworkUrl: getLargeArtworkUrl(candidate.artworkUrl100),
-        title: entity === "album" ? candidate.collectionName : candidate.trackName,
+        title:
+          entity === "album" ? candidate.collectionName : candidate.trackName,
       }),
-      { artist, title },
+      { artist, title }
     )
   } catch {
     return undefined
@@ -1541,7 +1814,7 @@ async function hydrateMusicRecap(recap: RawMusicRecap): Promise<MusicRecap> {
             title: album.title,
           })),
         rank: String(index + 1),
-      })),
+      }))
     ),
     Promise.all(
       recap.songs.map(async (song, index) => ({
@@ -1555,7 +1828,7 @@ async function hydrateMusicRecap(recap: RawMusicRecap): Promise<MusicRecap> {
             title: song.title,
           })),
         rank: String(index + 1),
-      })),
+      }))
     ),
   ])
 
