@@ -442,9 +442,14 @@ export default function Page() {
                   transition={entranceTransition(0.15)}
                 >
                   I&apos;m a 19 y/o{" "}
-                  <span className="text-foreground">software engineer</span> who
-                  cares about craft and detail. Now I&apos;m bringing that to{" "}
-                  <span className={skyAccentClassName}>AI research</span>,
+                  <a
+                    href="https://www.unibocconi.it/en/programs/bachelor-science/management-and-computer-science"
+                    className="text-foreground"
+                  >
+                    student
+                  </a>{" "}
+                  who cares about craft and detail. Now I&apos;m bringing that
+                  to <span className={skyAccentClassName}>AI research</span>,
                   especially{" "}
                   <span className="whitespace-nowrap text-foreground">
                     mechanistic interpretability
