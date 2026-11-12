@@ -1,7 +1,7 @@
 "use client"
 
 import Image from "next/image"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef } from "react"
 import { preload } from "react-dom"
 
 import { projectPoint, rasterizePlane } from "@/components/home/ascii-plane"
@@ -17,7 +17,13 @@ import {
   type Layout,
 } from "@/components/home/flight"
 import {
+  shouldAnimateIntro,
+  takeOverHome,
+  WORLD_WAIT_MS,
+} from "@/components/home/intro"
+import {
   createPaperRenderer,
+  paperShape,
   type PaperRenderer,
 } from "@/components/home/paper"
 import { Smoke } from "@/components/home/smoke"
@@ -30,14 +36,6 @@ const PHOTO_HEIGHT = 1083
 /** Row of the still where the mountain ridge peaks. */
 const RIDGE_ROW = 540
 const LAND_MATTE = "/home/land-matte.webp"
-/**
- * If the script only takes over after this long (ms since navigation), the
- * visitor is on a slow connection: skip the intro and settle straight into
- * the final scene. Keep it below the CSS fallback delay in globals.css.
- */
-const LATE_MOUNT_MS = 2200
-/** Longest the intro waits for the painting before starting anyway. */
-const WORLD_WAIT_MS = 1500
 const ZENITH = "rgb(9, 129, 185)"
 
 type Cloud = {
@@ -131,24 +129,6 @@ const CLOUDS: Cloud[] = [
   },
 ]
 
-let introPlayed = false
-
-/**
- * The intro plays on a full page load, but not when coming back to the
- * homepage from another page in the same visit.
- */
-export function useHomeIntro() {
-  const [playIntro] = useState(() =>
-    typeof window === "undefined" ? true : !introPlayed
-  )
-
-  useEffect(() => {
-    introPlayed = true
-  }, [])
-
-  return playIntro
-}
-
 type SkySceneProps = {
   playIntro: boolean
   /** Called once, when the copy should start fading in. */
@@ -182,9 +162,6 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     const context = planeCanvas?.getContext("2d")
     if (!scene || !world || !planeCanvas || !paperCanvas || !context) return
 
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches
     const debugTime =
       process.env.NODE_ENV === "development"
         ? Number.parseFloat(
@@ -195,12 +172,11 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     // On a slow load the copy may already be showing on plain paper (the
     // fallback in globals.css). Don't make anyone sit through the intro after
     // that, or when they've asked to save data.
-    const connection = (
-      navigator as Navigator & { connection?: { saveData?: boolean } }
-    ).connection
-    const arrivedLate =
-      performance.now() > LATE_MOUNT_MS || Boolean(connection?.saveData)
-    const animateIntro = playIntro && !reducedMotion && !arrivedLate
+    const {
+      reducedMotion,
+      arrivedLate,
+      animate: animateIntro,
+    } = shouldAnimateIntro(playIntro)
     let clock = Number.isFinite(debugTime)
       ? debugTime
       : animateIntro
@@ -212,31 +188,10 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     const mountedAt = performance.now()
     if (world.querySelector("img")?.complete) worldReadyRef.current = true
 
-    // Take over from the no-JS fallback. Normally that's immediate; after a
-    // late arrival the fallback may be showing, so let the copy's entrance
-    // finish underneath it, then fade the fallback paper away.
-    const root = document.documentElement
-    // The scene is one screen: no rubber-band bounce pulling the copy off
-    // its paper. Only on the homepage; other pages keep the native feel.
-    const previousOverscroll = root.style.overscrollBehavior
-    root.style.overscrollBehavior = "none"
-    document.body.style.overscrollBehavior = "none"
-    let handover = 0
-    if (arrivedLate && playIntro) {
-      handover = window.setTimeout(() => {
-        const overlay = fallbackRef.current
-        const shown = overlay ? getComputedStyle(overlay).opacity : "0"
-        if (overlay) overlay.style.opacity = shown
-        root.dataset.homeReady = ""
-        requestAnimationFrame(() => {
-          if (!overlay) return
-          overlay.style.transition = "opacity 0.9s ease"
-          overlay.style.opacity = "0"
-        })
-      }, 1700)
-    } else {
-      root.dataset.homeReady = ""
-    }
+    const releaseHome = takeOverHome(
+      fallbackRef.current,
+      arrivedLate && playIntro
+    )
 
     let lastPaperKey = ""
     const paper: PaperRenderer | null = createPaperRenderer(
@@ -389,53 +344,9 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
         width: WORLD.width * worldScale,
         height: PHOTO_HEIGHT * worldScale,
       }
-      // Desktop and tablets: a wide, slow haze, so the copy reads first and
-      // the sky opens only toward the edges. Phones: a short band of sky
-      // above the copy.
-      const short = Math.min(layout.width, layout.height)
-      const band = Math.max(70, keep.top * 0.8)
-      const mist =
-        layout.width < 640
-          ? {
-              start: band * 0.12,
-              end: band,
-              corner: band * 1.2,
-              drift: band * 0.8,
-            }
-          : {
-              start: short * 0.1,
-              end: short * 0.62,
-              corner: 0,
-              drift: short * 0.35,
-            }
-      // Phones: sky melts in over most of the space above the copy, the
-      // meadow over most of the space below it.
-      // Measured from the copy, so they follow it when the page scrolls or
-      // bounces; each fade keeps its start below its end even once the copy
-      // has moved off screen (a reversed fade would wipe the paper out).
-      const above = Math.max(0, keep.top)
-      const room = Math.max(0, layout.height - keep.bottom)
-      const topStart = Math.max(14, above * 0.12)
-      const bottomStart = Math.max(14, room * 0.06)
-      const bands =
-        layout.width < 640
-          ? {
-              top: [topStart, Math.max(topStart + 40, above * 0.8)] as [
-                number,
-                number,
-              ],
-              bottom: [bottomStart, Math.max(bottomStart + 56, room * 0.7)] as [
-                number,
-                number,
-              ],
-              drift: [
-                Math.max(24, above * 0.45),
-                Math.min(160, Math.max(24, room * 0.5)),
-              ] as [number, number],
-            }
-          : undefined
+      const { mist, bands, hug } = paperShape(layout.width, layout.height, keep)
       const mistEnd = mist.end
-      const key = `${mistEnd.toFixed(0)}|${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}`
+      const key = `${mistEnd.toFixed(0)}|${hug.toFixed(0)}|${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}`
       if (key === lastPaperKey) return
       lastPaperKey = key
       if (paper) {
@@ -450,6 +361,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
           photo,
           mist,
           bands,
+          hug,
           color: paperColor,
           dark: isDark,
         })
@@ -536,9 +448,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
 
     return () => {
       cancelAnimationFrame(frameId)
-      root.style.overscrollBehavior = previousOverscroll
-      document.body.style.overscrollBehavior = ""
-      window.clearTimeout(handover)
+      releaseHome()
       window.removeEventListener("resize", onResize)
       window.removeEventListener("wheel", skip)
       window.removeEventListener("touchstart", skip)

@@ -90,7 +90,7 @@ function len3(x: number, y: number, z: number) {
 
 // SDF primitives ---------------------------------------------------------------
 
-function sdEllipsoid(
+export function sdEllipsoid(
   x: number,
   y: number,
   z: number,
@@ -103,7 +103,7 @@ function sdEllipsoid(
   return k1 === 0 ? -Math.min(rx, ry, rz) : (k0 * (k0 - 1)) / k1
 }
 
-function sdCapsule(
+export function sdCapsule(
   px: number,
   py: number,
   pz: number,
@@ -132,7 +132,7 @@ function sdCapsule(
 }
 
 /** Round cone between two points along the x axis (Inigo Quilez). */
-function sdRoundCone(
+export function sdRoundCone(
   px: number,
   py: number,
   pz: number,

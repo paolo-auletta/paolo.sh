@@ -18,7 +18,9 @@ import {
   PreviewLinkCardImage,
   PreviewLinkCardTrigger,
 } from "@/components/animate-ui/components/radix/preview-link-card"
-import { SkyScene, useHomeIntro } from "@/components/home/sky-scene"
+import { GiantNight } from "@/components/home/giant-night"
+import { readTheme, useHomeIntro, useHomeTheme } from "@/components/home/intro"
+import { SkyScene } from "@/components/home/sky-scene"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
@@ -37,6 +39,39 @@ const externalLinkProps = {
   target: "_blank",
   rel: "noreferrer",
 } as const
+
+/**
+ * The scene behind the copy: the seaplane's sky by day, the Giant's night in
+ * dark mode. The server can't know the theme, so it sends the day scene,
+ * hidden from dark mode by CSS until the script has swapped the night in.
+ * Only the theme the page loaded in plays its intro; switching themes
+ * afterwards lands on the other scene already settled.
+ */
+function HomeScene({
+  playIntro,
+  onReveal,
+}: {
+  playIntro: boolean
+  onReveal: () => void
+}) {
+  const { theme, intro } = useHomeTheme()
+
+  if (theme === "dark") {
+    return <GiantNight playIntro={playIntro && intro} onReveal={onReveal} />
+  }
+  return (
+    <div className="dark:hidden">
+      <SkyScene
+        playIntro={playIntro && intro}
+        // In dark mode this scene exists for one hidden pass before the
+        // night replaces it: the copy is not its to reveal.
+        onReveal={() => {
+          if (readTheme() === "light") onReveal()
+        }}
+      />
+    </div>
+  )
+}
 
 /** The one accent in the copy: the blue of the sky behind it. */
 const skyAccentClassName =
@@ -325,7 +360,7 @@ export default function Page() {
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden">
-      <SkyScene playIntro={playIntro} onReveal={() => setIsRevealed(true)} />
+      <HomeScene playIntro={playIntro} onReveal={() => setIsRevealed(true)} />
       <div className="relative z-10 flex flex-1 flex-col items-center [justify-content:safe_center] pt-[9svh] pb-[12svh] sm:pt-14 sm:pb-[40svh] md:pt-16">
         <section className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
           <motion.div

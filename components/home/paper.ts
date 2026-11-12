@@ -1,5 +1,3 @@
-import type { Layout } from "@/components/home/flight"
-
 /**
  * The "paper" laid over the painting once we land. It dissolves in outward
  * from the text as a soft white mist:
@@ -28,7 +26,7 @@ uniform float uWash;        // 0 → 1
 uniform vec2 uOrigin;       // CSS pixels, where the wash starts
 uniform vec4 uKeep;         // CSS pixel rect that always stays paper
 uniform vec4 uPhoto;        // the film still on screen: left, top, width, height
-uniform sampler2D uLand;    // land matte for the still
+uniform sampler2D uLand;    // mattes for the still: red the land, green what stands on it
 uniform float uHasLand;
 uniform vec3 uPaper;
 uniform vec4 uMist;         // start, end (px from the copy), corner rounding, drift
@@ -36,6 +34,9 @@ uniform float uCompact;     // phones: full-width bands instead of a haze
 uniform vec4 uBands;        // phones: top band start, end; bottom band start, end
 uniform vec2 uBandDrift;    // phones: how far the top and bottom edges wander
 uniform float uGrain;
+uniform float uHug;         // px: how far the paper holds the scene back from the copy
+uniform float uStanding;    // phones: 1 = what stands on the land is cut out over the paper
+uniform float uVeil;        // how opaque the paper is at its thickest
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -65,21 +66,22 @@ float fbm(vec2 p) {
   return value;
 }
 
-float land(vec2 p) {
-  if (uHasLand < 0.5) return 0.0;
+// x: the land. y: what stands on it (the night scene's pines).
+vec2 land(vec2 p) {
+  if (uHasLand < 0.5) return vec2(0.0);
   vec2 texel = 1.0 / uPhoto.zw;
   vec2 uv = (p - uPhoto.xy) * texel;
-  if (uv.y < 0.0) return 0.0;
+  if (uv.y < 0.0) return vec2(0.0);
   // A small blur so the cut is precise but never razor sharp.
-  float sum = texture2D(uLand, uv).r * 0.28;
-  sum += texture2D(uLand, uv + vec2(2.5, 0.0) * texel).r * 0.09;
-  sum += texture2D(uLand, uv - vec2(2.5, 0.0) * texel).r * 0.09;
-  sum += texture2D(uLand, uv + vec2(0.0, 2.5) * texel).r * 0.09;
-  sum += texture2D(uLand, uv - vec2(0.0, 2.5) * texel).r * 0.09;
-  sum += texture2D(uLand, uv + vec2(4.0, 4.0) * texel).r * 0.09;
-  sum += texture2D(uLand, uv - vec2(4.0, 4.0) * texel).r * 0.09;
-  sum += texture2D(uLand, uv + vec2(4.0, -4.0) * texel).r * 0.09;
-  sum += texture2D(uLand, uv - vec2(4.0, -4.0) * texel).r * 0.09;
+  vec2 sum = texture2D(uLand, uv).rg * 0.28;
+  sum += texture2D(uLand, uv + vec2(2.5, 0.0) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv - vec2(2.5, 0.0) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv + vec2(0.0, 2.5) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv - vec2(0.0, 2.5) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv + vec2(4.0, 4.0) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv - vec2(4.0, 4.0) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv + vec2(4.0, -4.0) * texel).rg * 0.09;
+  sum += texture2D(uLand, uv - vec2(4.0, -4.0) * texel).rg * 0.09;
   return sum;
 }
 
@@ -87,7 +89,8 @@ void main() {
   vec2 p = gl_FragCoord.xy / uPixelRatio;
   p.y = uResolution.y - p.y;
 
-  float ground = land(p);
+  vec2 mattes = land(p);
+  float ground = mattes.x;
 
   // Distance from the copy's box (negative inside).
   vec2 k = max(uKeep.xy - p, p - uKeep.zw);
@@ -105,9 +108,16 @@ void main() {
   float sky = smoothstep(uMist.x, uMist.y, dRound + drift);
   float paper = 1.0 - max(ground, sky);
 
-  // The copy always sits on paper, with a soft margin around it.
-  float dMargin = dKeep + (fbm(p * 0.006) - 0.5) * 40.0;
-  paper = max(paper, 1.0 - smoothstep(10.0, 90.0, dMargin));
+  // The copy always sits on paper, with a soft margin around it: a rounded,
+  // drifting cloud rather than a box, wider when the scene crowds the copy
+  // (short screens), so its edge never reads as the copy's outline.
+  float hugCorner = min(min(halfSize.x, halfSize.y), uHug * 1.4);
+  vec2 hq = abs(p - center) - (halfSize - hugCorner);
+  float dHug = length(max(hq, 0.0)) + min(max(hq.x, hq.y), 0.0) - hugCorner;
+  dHug = max(dHug, dKeep * 0.6);
+  dHug += (fbm(p * 0.006) - 0.5) * (30.0 + uHug * 0.55);
+  float hugged = 1.0 - smoothstep(uHug * 0.12, uHug, dHug);
+  paper = max(paper, hugged);
 
   if (uCompact > 0.5) {
     // Phones: the paper runs edge to edge, so there are no sides to see. A
@@ -119,6 +129,9 @@ void main() {
     float below = p.y - uKeep.w;
     float bottomEdge = (fbm(vec2(p.x * 0.006, p.y * 0.01) + 11.0) - 0.5) * uBandDrift.y;
     float landBelow = smoothstep(uBands.z, uBands.w, below + bottomEdge);
+    // Whatever stands on the land comes up through the paper along its own
+    // silhouette, from just under the copy down.
+    if (uStanding > 0.5) landBelow = max(landBelow, mattes.y * smoothstep(-10.0, 26.0, below));
     paper = 1.0 - max(skyTop, landBelow);
   }
 
@@ -129,18 +142,26 @@ void main() {
   float washed = smoothstep(-180.0, 180.0, front);
   paper *= washed;
 
+  // A veil rather than paper: never fully opaque, and thinner the farther
+  // it is from the copy, so the scene shows through more around it.
+  float body = paper;
+  paper = uVeil * pow(paper, 1.0 + (1.0 - uVeil) * 1.6);
+
   // Grain: transitions break up into fine speckle instead of a hard line.
   float grain = hash(floor(p * uPixelRatio));
-  float edge = 1.0 - abs(2.0 * paper - 1.0);
-  float alpha = clamp(paper + (grain - 0.5) * 0.22 * edge, 0.0, 1.0);
+  // Only where the paper itself gives way: a veil is see-through all over,
+  // and grain across all of it would read as a screen door.
+  float edge = 1.0 - abs(2.0 * body - 1.0);
+  float alpha = clamp(paper + (grain - 0.5) * 0.22 * uVeil * edge, 0.0, 1.0);
 
-  vec3 color = uPaper * (1.0 - (hash(floor(p * uPixelRatio) + 7.0) - 0.5) * uGrain);
+  float speck = hash(floor(p * uPixelRatio) + 7.0) - 0.5;
+  vec3 color = uPaper * (1.0 - speck * uGrain);
   gl_FragColor = vec4(color * alpha, alpha);
 }
 `
 
 export type PaperFrame = {
-  layout: Layout
+  layout: { width: number; height: number }
   wash: number
   origin: { x: number; y: number }
   keep: { left: number; top: number; right: number; bottom: number }
@@ -159,8 +180,68 @@ export type PaperFrame = {
     bottom: [number, number]
     drift: [number, number]
   }
+  /** px: how far the paper holds the scene back from the copy. */
+  hug: number
   color: [number, number, number]
   dark: boolean
+  /**
+   * Phones only: what the matte's green channel marks (the night scene's
+   * pines) stands over the paper below the copy, cut along its silhouette.
+   */
+  standing?: boolean
+  /**
+   * How opaque the paper is at its thickest, 0–1 (default 1). Below 1 it
+   * becomes a veil that the scene shows through, more so toward its edges.
+   */
+  veil?: number
+}
+
+type Keep = { left: number; top: number; right: number; bottom: number }
+
+/**
+ * The paper's shape for a screen and where the copy sits on it. Shared by
+ * the day and night scenes so both settle into the same layout.
+ */
+export function paperShape(width: number, height: number, keep: Keep) {
+  const compact = width < 640
+  // Desktop and tablets: a wide, slow haze, so the copy reads first and the
+  // scene opens only toward the edges. Phones: a short band above the copy.
+  const short = Math.min(width, height)
+  const band = Math.max(70, keep.top * 0.8)
+  const mist = compact
+    ? { start: band * 0.12, end: band, corner: band * 1.2, drift: band * 0.8 }
+    : { start: short * 0.1, end: short * 0.62, corner: 0, drift: short * 0.35 }
+  // Phones: the scene melts in over most of the space above the copy and
+  // below it. Measured from the copy, so they follow it when the page
+  // scrolls or bounces; each fade keeps its start below its end even once
+  // the copy has moved off screen (a reversed fade would wipe the paper out).
+  const above = Math.max(0, keep.top)
+  const room = Math.max(0, height - keep.bottom)
+  const topStart = Math.max(14, above * 0.12)
+  const bottomStart = Math.max(14, room * 0.06)
+  const bands = compact
+    ? {
+        top: [topStart, Math.max(topStart + 40, above * 0.8)] as [
+          number,
+          number,
+        ],
+        bottom: [bottomStart, Math.max(bottomStart + 56, room * 0.7)] as [
+          number,
+          number,
+        ],
+        drift: [
+          Math.max(24, above * 0.45),
+          Math.min(160, Math.max(24, room * 0.5)),
+        ] as [number, number],
+      }
+    : undefined
+  // The less room around the copy, the further the paper reaches out.
+  const tight = Math.min(
+    1,
+    Math.max(0, (320 - Math.min(room, above + 120)) / 320)
+  )
+  const hug = 90 + tight * 190
+  return { mist, bands, hug }
 }
 
 export type PaperRenderer = {
@@ -177,7 +258,8 @@ let sharedLandImage: HTMLImageElement | null = null
 
 export function createPaperRenderer(
   canvas: HTMLCanvasElement,
-  landMatte: string,
+  /** The matte of the land kept clear of paper, or null for none. */
+  landMatte: string | null,
   onLandReady: () => void
 ): PaperRenderer | null {
   const gl = canvas.getContext("webgl", {
@@ -218,20 +300,25 @@ export function createPaperRenderer(
     compact: uniform("uCompact"),
     bands: uniform("uBands"),
     bandDrift: uniform("uBandDrift"),
+    hug: uniform("uHug"),
+    standing: uniform("uStanding"),
+    veil: uniform("uVeil"),
   }
 
   const texture = gl.createTexture()
   let hasLand = false
   if (
-    !sharedLandImage ||
-    sharedLandImage.src !== new URL(landMatte, location.href).href
+    landMatte &&
+    (!sharedLandImage ||
+      sharedLandImage.src !== new URL(landMatte, location.href).href)
   ) {
     sharedLandImage = new Image()
     sharedLandImage.decoding = "async"
     sharedLandImage.src = landMatte
   }
-  const image = sharedLandImage
+  const image = landMatte ? sharedLandImage : null
   const upload = () => {
+    if (!image) return
     gl.bindTexture(gl.TEXTURE_2D, texture)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
@@ -241,9 +328,11 @@ export function createPaperRenderer(
     hasLand = true
     onLandReady()
   }
-  const ready = image.complete && image.naturalWidth > 0
-  if (ready) upload()
-  else image.addEventListener("load", upload, { once: true })
+  if (image) {
+    const ready = image.complete && image.naturalWidth > 0
+    if (ready) upload()
+    else image.addEventListener("load", upload, { once: true })
+  }
 
   let pixelRatio = 1
 
@@ -254,7 +343,20 @@ export function createPaperRenderer(
       canvas.height = Math.round(height * ratio)
       gl.viewport(0, 0, canvas.width, canvas.height)
     },
-    render({ layout, wash, origin, keep, photo, mist, bands, color, dark }) {
+    render({
+      layout,
+      wash,
+      origin,
+      keep,
+      photo,
+      mist,
+      bands,
+      hug,
+      color,
+      dark,
+      standing,
+      veil = 1,
+    }) {
       gl.uniform2f(u.resolution, layout.width, layout.height)
       gl.uniform1f(u.pixelRatio, pixelRatio)
       gl.uniform1f(u.wash, wash)
@@ -272,13 +374,16 @@ export function createPaperRenderer(
         gl.uniform4f(u.bands, ...bands.top, ...bands.bottom)
         gl.uniform2f(u.bandDrift, ...bands.drift)
       }
+      gl.uniform1f(u.hug, hug)
+      gl.uniform1f(u.standing, standing ? 1 : 0)
+      gl.uniform1f(u.veil, veil)
       gl.uniform1f(u.grain, dark ? 0.03 : 0.012)
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
     },
     dispose() {
-      image.removeEventListener("load", upload)
+      image?.removeEventListener("load", upload)
       gl.deleteTexture(texture)
       gl.deleteBuffer(buffer)
       gl.deleteProgram(program)
@@ -286,7 +391,11 @@ export function createPaperRenderer(
   }
 }
 
-function link(gl: WebGLRenderingContext, vertex: string, fragment: string) {
+export function link(
+  gl: WebGLRenderingContext,
+  vertex: string,
+  fragment: string
+) {
   const compile = (type: number, source: string) => {
     const shader = gl.createShader(type)
     if (!shader) return null
