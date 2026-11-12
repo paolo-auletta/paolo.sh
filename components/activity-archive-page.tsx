@@ -532,6 +532,11 @@ function MusicActivityList({
   )
 }
 
+/**
+ * An invisible copy of the homepage copy, laid out with the homepage's own
+ * spacing, so these pages start exactly where the homepage text does. Keep it
+ * in sync with app/page.tsx.
+ */
 function HomePagePositionAnchor() {
   return (
     <div className="relative flex flex-col gap-4">
@@ -545,19 +550,17 @@ function HomePagePositionAnchor() {
         </h1>
         <p className="text-muted-foreground">
           I&apos;m a 19 y/o{" "}
-          <span className="text-foreground"> software developer </span> and{" "}
-          <span className="text-foreground"> bachelor student </span>. I care
-          deeply about craft, detail, and the{" "}
-          <span className="bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text pr-1 font-caveat text-sm text-xl leading-0 font-bold whitespace-nowrap text-transparent">
-            {" "}
-            little things
+          <span className="text-foreground">software engineer</span> who cares
+          about craft and detail. Now I&apos;m bringing that to{" "}
+          <span className="font-medium">AI research</span>, especially{" "}
+          <span className="whitespace-nowrap text-foreground">
+            mechanistic interpretability
           </span>{" "}
-          that make a{" "}
-          <span className="font-serif text-sm leading-0 text-foreground">
-            {" "}
-            difference
-          </span>{" "}
-          {"\u2013"} I like to make people feel something through my work.
+          and{" "}
+          <span className="whitespace-nowrap text-foreground">
+            automated research
+          </span>
+          .
         </p>
         <p className="items-center text-muted-foreground">
           Currently, I&apos;m doing research at{" "}
@@ -576,7 +579,10 @@ function HomePagePositionAnchor() {
         </p>
       </div>
       <p className="items-center text-muted-foreground">
-        You can reach me on{" "}
+        You can check out my{" "}
+        <span className="font-medium whitespace-nowrap">personal projects</span>{" "}
+        and <span className="font-medium whitespace-nowrap">research</span>. You
+        can reach me on{" "}
         <span className="inline font-medium whitespace-nowrap text-primary">
           <span className="mr-1 mb-1 inline-block h-[1em] w-[1em] align-middle" />
           LinkedIn
@@ -588,54 +594,6 @@ function HomePagePositionAnchor() {
         </span>
         .
       </p>
-      <div className="flex flex-col gap-4 leading-relaxed">
-        <div className="w-fit text-sm font-medium text-muted-foreground/60">
-          Read more
-        </div>
-        <div className="flex flex-col gap-2 overflow-hidden">
-          <p className="items-center text-muted-foreground">
-            <span>I&apos;m currently doing research at </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              Sapienza
-            </span>
-            <span>. Before that, I was in Los Angeles, interning at </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              BarCloud
-            </span>{" "}
-            <span>
-              as a Software Engineer, where I built frontier AI systems that
-              automate complex workflows. Earlier, I interned at{" "}
-            </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              DataPizza
-            </span>{" "}
-            <span>as a Frontend Software Engineer, where I worked on </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              DualOS
-            </span>
-            <span>
-              , an enterprise platform for AI workflows and automations.
-            </span>
-          </p>
-          <div className="items-center text-muted-foreground">
-            <span>I&apos;m also vice president of </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              BAINSA
-            </span>
-            <span>
-              , the largest Italian and one of the largest European student
-              associations focused on AI and neuroscience.
-            </span>
-          </div>
-          <p className="items-center text-muted-foreground">
-            <span>Here you can checkout my </span>
-            <span className="inline font-medium whitespace-nowrap text-primary">
-              projects
-            </span>
-            <span>.</span>
-          </p>
-        </div>
-      </div>
     </div>
   )
 }
@@ -663,17 +621,21 @@ export function ActivityArchivePage({
 
   return (
     <div className="relative flex min-h-svh flex-col">
-      <div className="flex flex-1 flex-col items-center [justify-content:safe_center] py-10 sm:py-14 md:py-16">
+      {/*
+       * From sm up: same spacing as the homepage (app/page.tsx), so the page
+       * starts where the homepage copy does. Phones just start at the top.
+       */}
+      <div className="flex flex-1 flex-col items-center justify-start pt-10 pb-16 sm:[justify-content:safe_center] sm:pt-14 sm:pb-[40svh] md:pt-16">
         <section className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
-          <div className="mx-auto max-w-xl text-base">
+          <div className="mx-auto max-w-xl text-base lg:max-w-[40rem]">
             <div className="relative overflow-visible">
               <div
                 aria-hidden="true"
-                className="pointer-events-none invisible select-none"
+                className="pointer-events-none invisible hidden select-none sm:block"
               >
                 <HomePagePositionAnchor />
               </div>
-              <div className="absolute inset-x-0 top-0 flex flex-col gap-8 pb-16">
+              <div className="flex flex-col gap-8 sm:absolute sm:inset-x-0 sm:top-0 sm:pb-16">
                 <div className="flex flex-col gap-3">
                   <motion.h1
                     className="text-xl font-medium text-foreground"

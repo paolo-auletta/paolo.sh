@@ -18,7 +18,7 @@ import {
   PreviewLinkCardImage,
   PreviewLinkCardTrigger,
 } from "@/components/animate-ui/components/radix/preview-link-card"
-import { usePageEntranceAnimation } from "@/components/use-page-entrance-animation"
+import { SkyScene, useHomeIntro } from "@/components/home/sky-scene"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
@@ -37,6 +37,10 @@ const externalLinkProps = {
   target: "_blank",
   rel: "noreferrer",
 } as const
+
+/** The one accent in the copy: the blue of the sky behind it. */
+const skyAccentClassName =
+  "bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text font-medium text-transparent"
 
 const inlineLinkClassName =
   "inline cursor-pointer font-medium whitespace-nowrap text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
@@ -102,78 +106,85 @@ function LinkPreview({
   )
 }
 
-export default function Page() {
-  const shouldAnimatePageEntrance = usePageEntranceAnimation("home")
-  const prefersReducedMotion = useReducedMotion() ?? false
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [latestMovieTitle, setLatestMovieTitle] = useState("Obsession")
-  const [latestMoviePoster, setLatestMoviePoster] = useState<string>()
-  const [latestMusicTitle, setLatestMusicTitle] = useState("Graduation")
-  const [latestMusicArtwork, setLatestMusicArtwork] = useState<string>()
-  const [teaserHeight, setTeaserHeight] = useState(112)
-  const [expandedOffsetY, setExpandedOffsetY] = useState(0)
-  const teaserRef = useRef<HTMLDivElement>(null)
-  const readMoreButtonRef = useRef<HTMLButtonElement>(null)
+type Latest = { title?: string; image?: string }
 
-  useEffect(() => {
-    let isMounted = true
+/**
+ * The latest album and film, fetched once per visit. Coming back to the
+ * homepage reuses them, so the copy never flickers back to the fallbacks.
+ */
+const latest: {
+  movie?: Latest
+  music?: Latest
+  request?: Promise<void>
+} = {}
 
+function loadLatest() {
+  latest.request ??= Promise.all([
     fetch("/api/letterboxd/latest")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Unable to load latest Letterboxd movie")
         }
-
         return response.json() as Promise<{
           posterUrl?: string
           title?: string
         }>
       })
       .then((movie) => {
-        if (!isMounted) {
-          return
-        }
-
-        if (movie.title) {
-          setLatestMovieTitle(movie.title)
-        }
-
-        if (movie.posterUrl) {
-          setLatestMoviePoster(movie.posterUrl)
-        }
+        latest.movie = { title: movie.title, image: movie.posterUrl }
       })
       .catch(() => {
         // Keep the fallback copy when the feed is unavailable.
-      })
-
+      }),
     fetch("/api/music/latest")
       .then((response) => {
         if (!response.ok) {
           throw new Error("Unable to load latest music recap")
         }
-
         return response.json() as Promise<{
           album?: string
           artworkUrl?: string
         }>
       })
       .then((music) => {
-        if (!isMounted) {
-          return
-        }
-
-        if (music.album) {
-          setLatestMusicTitle(music.album)
-        }
-
-        if (music.artworkUrl) {
-          setLatestMusicArtwork(music.artworkUrl)
-        }
+        latest.music = { title: music.album, image: music.artworkUrl }
       })
       .catch(() => {
         // Keep the fallback copy when the recap is unavailable.
-      })
+      }),
+  ]).then(() => {
+    // Warm the covers so the first hover card opens fully drawn.
+    for (const src of [latest.movie?.image, latest.music?.image]) {
+      if (src) new window.Image().src = src
+    }
+  })
+  return latest.request
+}
 
+export default function Page() {
+  const playIntro = useHomeIntro()
+  const [isRevealed, setIsRevealed] = useState(!playIntro)
+  const prefersReducedMotion = useReducedMotion() ?? false
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [latestMovie, setLatestMovie] = useState(() => latest.movie)
+  const [latestMusic, setLatestMusic] = useState(() => latest.music)
+  const latestMovieTitle = latestMovie?.title || "Obsession"
+  const latestMoviePoster = latestMovie?.image
+  const latestMusicTitle = latestMusic?.title || "Graduation"
+  const latestMusicArtwork = latestMusic?.image
+  const [teaserHeight, setTeaserHeight] = useState(112)
+  const [expandedOffsetY, setExpandedOffsetY] = useState(0)
+  const teaserRef = useRef<HTMLDivElement>(null)
+  const readMoreButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (latest.movie && latest.music) return
+    let isMounted = true
+    loadLatest().then(() => {
+      if (!isMounted) return
+      setLatestMovie(latest.movie)
+      setLatestMusic(latest.music)
+    })
     return () => {
       isMounted = false
     }
@@ -198,9 +209,10 @@ export default function Page() {
     return () => observer.disconnect()
   }, [])
 
-  const entranceInitial = shouldAnimatePageEntrance ? "hidden" : false
+  const entranceInitial = playIntro ? "hidden" : false
+  const entranceAnimate = isRevealed ? "visible" : "hidden"
   const entranceTransition = (delay: number) =>
-    shouldAnimatePageEntrance ? transition(delay) : { duration: 0 }
+    playIntro ? transition(delay) : { duration: 0 }
   const railTransition = prefersReducedMotion
     ? { duration: 0 }
     : { duration: 0.7, ease }
@@ -298,24 +310,28 @@ export default function Page() {
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden">
-      <div className="flex flex-1 flex-col items-center [justify-content:safe_center] py-10 sm:py-14 md:py-16">
+      <SkyScene playIntro={playIntro} onReveal={() => setIsRevealed(true)} />
+      <div className="relative z-10 flex flex-1 flex-col items-center [justify-content:safe_center] pt-[9svh] pb-[12svh] sm:pt-14 sm:pb-[40svh] md:pt-16">
         <section className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
           <motion.div
-            className="mx-auto flex max-w-xl flex-col gap-8 text-base"
+            data-paper-keep
+            className="mx-auto flex max-w-xl flex-col gap-8 text-base lg:max-w-[40rem]"
             animate={{ y: isExpanded ? -expandedOffsetY : 0 }}
             transition={railTransition}
           >
             <div className="relative flex flex-col gap-4">
               <motion.div
+                data-paper-keep
                 className="relative h-24 w-24 overflow-hidden sm:h-26 sm:w-26 lg:absolute lg:top-1 lg:right-[calc(100%+1.5rem)]"
                 style={
                   {
                     "--portrait-size": `${teaserHeight}px`,
                   } as CSSProperties
                 }
+                data-home-fallback
                 variants={fadeUp}
                 initial={entranceInitial}
-                animate="visible"
+                animate={entranceAnimate}
                 transition={entranceTransition(0)}
               >
                 <Image
@@ -333,9 +349,10 @@ export default function Page() {
               >
                 <motion.h1
                   className="flex items-center gap-1.5"
+                  data-home-fallback
                   variants={fadeUp}
                   initial={entranceInitial}
-                  animate="visible"
+                  animate={entranceAnimate}
                   transition={entranceTransition(0)}
                 >
                   <span className="font-medium">
@@ -347,39 +364,32 @@ export default function Page() {
                 </motion.h1>
                 <motion.p
                   className="text-muted-foreground"
+                  data-home-fallback
                   variants={fadeUp}
                   initial={entranceInitial}
-                  animate="visible"
+                  animate={entranceAnimate}
                   transition={entranceTransition(0.15)}
                 >
                   I&apos;m a 19 y/o{" "}
-                  <span className="text-foreground"> software developer </span>{" "}
+                  <span className="text-foreground">software engineer</span> who
+                  cares about craft and detail. Now I&apos;m bringing that to{" "}
+                  <span className={skyAccentClassName}>AI research</span>,
+                  especially{" "}
+                  <span className="whitespace-nowrap text-foreground">
+                    mechanistic interpretability
+                  </span>{" "}
                   and{" "}
-                  <a
-                    href="https://www.unibocconi.it/en/programs/bachelor-science/economics-management-and-computer-science"
-                    {...externalLinkProps}
-                    className="text-foreground"
-                  >
-                    {" "}
-                    bachelor student{" "}
-                  </a>
-                  . I care deeply about craft, detail, and the{" "}
-                  <span className="bg-[linear-gradient(180deg,oklch(0.7012_0.0685_231.14),oklch(0.4303_0.1342_260.26))] bg-clip-text pr-1 font-caveat text-sm text-xl leading-0 font-bold whitespace-nowrap text-transparent">
-                    {" "}
-                    little things
-                  </span>{" "}
-                  that make a{" "}
-                  <span className="font-serif text-sm leading-0 text-foreground">
-                    {" "}
-                    difference
-                  </span>{" "}
-                  – I like to make people feel something through my work.
+                  <span className="whitespace-nowrap text-foreground">
+                    automated research
+                  </span>
+                  .
                 </motion.p>
                 <motion.p
                   className="items-center text-muted-foreground"
+                  data-home-fallback
                   variants={fadeUp}
                   initial={entranceInitial}
-                  animate="visible"
+                  animate={entranceAnimate}
                   transition={entranceTransition(0.28)}
                 >
                   Currently, I&apos;m doing research at{" "}
@@ -443,9 +453,10 @@ export default function Page() {
               </div>
               <motion.p
                 className="items-center text-muted-foreground"
+                data-home-fallback
                 variants={fadeUp}
                 initial={entranceInitial}
-                animate="visible"
+                animate={entranceAnimate}
                 transition={entranceTransition(0.52)}
               >
                 <span>You can check out my </span>
@@ -502,14 +513,16 @@ export default function Page() {
                   .
                 </span>
               </motion.p>
-              <div className="relative flex flex-col leading-relaxed">
+              {/* Read more: hidden for now, kept for later. */}
+              <div className="relative hidden flex-col leading-relaxed">
                 <motion.button
                   ref={readMoreButtonRef}
                   type="button"
                   className="w-fit cursor-pointer text-sm font-medium text-muted-foreground/60 transition-colors hover:text-muted-foreground"
+                  data-home-fallback
                   variants={fadeUp}
                   initial={entranceInitial}
-                  animate="visible"
+                  animate={entranceAnimate}
                   transition={entranceTransition(0.59)}
                   onClick={handleExpandedToggle}
                 >
@@ -534,7 +547,8 @@ export default function Page() {
                 <AnimatePresence initial={false}>
                   {isExpanded && (
                     <motion.div
-                      className="absolute top-full left-0 right-0 mt-4 flex flex-col gap-2"
+                      data-paper-keep
+                      className="absolute top-full right-0 left-0 mt-4 flex flex-col gap-2"
                       initial={{
                         opacity: 0,
                         y: prefersReducedMotion ? 0 : 18,

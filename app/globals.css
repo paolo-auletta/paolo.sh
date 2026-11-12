@@ -6,7 +6,8 @@
 
 @theme inline {
   --font-heading: var(--font-sans);
-  --font-sans: var(--font-sans);
+  /* Trying Geist Mono as the base font; set back to var(--font-sans) for Geist. */
+  --font-sans: var(--font-mono);
   --font-serif: var(--font-libre-baskerville);
   --font-caveat: var(--font-caveat);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -129,5 +130,47 @@
   }
   html {
     @apply font-sans;
+    /*
+     * Everything is sized in rem, so this scales the whole site: type and
+     * spacing at about the density of macOS's "More Space" display setting.
+     * A percentage, so it still follows the reader's own browser text size.
+     */
+    font-size: 87.5%;
+
+    /*
+     * Desktops: grow gently with the window, from 14px on a laptop (up to
+     * ~1512px wide) to 16px at 2560px, so bigger screens keep the same
+     * proportions. Mostly rem, so browser zoom still works.
+     */
+    @media (min-width: 1024px) {
+      font-size: clamp(0.875rem, 0.6947rem + 0.1908vw, 1rem);
+    }
   }
+}
+
+/*
+ * Homepage fallback: if the intro's script hasn't taken over in time (a slow
+ * connection, or no JavaScript at all), show the copy on plain paper anyway.
+ * The script sets data-home-ready on <html> as soon as it runs.
+ */
+@keyframes home-fallback-reveal {
+  to {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+html:not([data-home-ready]) [data-home-fallback] {
+  animation: home-fallback-reveal 0.6s ease-out 2.4s forwards;
+}
+
+/*
+ * Radix copies the card's z-index onto its portal wrapper, but our z-50 lands
+ * on the inner link, leaving the wrapper at auto: under the homepage copy.
+ */
+[data-radix-popper-content-wrapper]:has(
+  > [data-slot="preview-link-card-content"]
+) {
+  z-index: 50 !important;
 }
