@@ -21,6 +21,7 @@ import {
 import { GiantNight } from "@/components/home/giant-night"
 import { readTheme, useHomeIntro, useHomeTheme } from "@/components/home/intro"
 import { SkyScene } from "@/components/home/sky-scene"
+import { ARRIVE_MS, arriveHome } from "@/components/page-transition"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
@@ -213,6 +214,13 @@ function loadLatest() {
 
 export default function Page() {
   const playIntro = useHomeIntro()
+  // Coming back from another page: the scene starts all paper and the paper
+  // draws back in to the copy. Set before the scene draws its first frame.
+  const [arriving] = useState(() => {
+    if (playIntro || typeof window === "undefined") return false
+    arriveHome()
+    return true
+  })
   const [isRevealed, setIsRevealed] = useState(!playIntro)
   const prefersReducedMotion = useReducedMotion() ?? false
   const [isExpanded, setIsExpanded] = useState(false)
@@ -259,10 +267,20 @@ export default function Page() {
     return () => observer.disconnect()
   }, [])
 
-  const entranceInitial = playIntro ? "hidden" : false
+  const entranceInitial = playIntro || arriving ? "hidden" : false
   const entranceAnimate = isRevealed ? "visible" : "hidden"
+  // Arriving, the copy waits for the paper to have mostly drawn back, then
+  // settles onto it: quicker and closer together than the intro's entrance.
   const entranceTransition = (delay: number) =>
-    playIntro ? transition(delay) : { duration: 0 }
+    playIntro
+      ? transition(delay)
+      : arriving && !prefersReducedMotion
+        ? {
+            duration: 0.55,
+            delay: (ARRIVE_MS / 1000) * 0.8 + delay * 0.35,
+            ease,
+          }
+        : { duration: 0 }
   const railTransition = prefersReducedMotion
     ? { duration: 0 }
     : { duration: 0.7, ease }
@@ -361,7 +379,10 @@ export default function Page() {
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden">
       <HomeScene playIntro={playIntro} onReveal={() => setIsRevealed(true)} />
-      <div className="relative z-10 flex flex-1 flex-col items-center [justify-content:safe_center] pt-[9svh] pb-[12svh] sm:pt-14 sm:pb-[40svh] md:pt-16">
+      <div
+        data-home-copy
+        className="relative z-10 flex flex-1 flex-col items-center [justify-content:safe_center] pt-[9svh] pb-[12svh] sm:pt-14 sm:pb-[40svh] md:pt-16"
+      >
         <section className="w-full px-6 sm:px-10 md:px-16 lg:px-20">
           <motion.div
             data-paper-keep

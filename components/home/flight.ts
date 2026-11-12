@@ -4,22 +4,27 @@ import type { PlanePose } from "@/components/home/ascii-plane"
  * The homepage intro, on one clock (seconds).
  *
  *   0.0  sky only, high above the meadow
- *   0.3  the plane flies in from the left while the camera starts to descend
+ *   0.3  the plane comes down from high above the top left in one smooth
+ *        arc while the camera starts to descend: slow at first, faster and
+ *        faster, rolling over once on the way down
+ *   1.4  at the bottom of the arc it is level, and banks away into the
+ *        distance on the right
  *   3.9  the paper washes in around the text
  *   4.3  the copy fades in
- *   4.9  the plane leaves on the right; the camera lands on the meadow
- *   5.6+ the plane comes back from the top right and wanders the sky,
+ *   4.9  the camera lands on the meadow
+ *   4.9+ the plane comes back from the top right and wanders the sky,
  *        drifting between the open patches around the edges
  */
 export const INTRO = {
   planeIn: 0.3,
-  planeOut: 4.9,
+  diveEnd: 1.4,
+  planeOut: 4.1,
   cameraStart: 0.6,
   cameraEnd: 4.9,
   paperStart: 3.9,
   paperEnd: 5.4,
   reveal: 4.3,
-  wanderStart: 5.6,
+  wanderStart: 4.9,
   /** A time well after everything has settled, for skipping the intro. */
   settled: 40,
 } as const
@@ -54,7 +59,7 @@ export function getLayout(width: number, height: number): Layout {
     // Phones anchor the meadow to the bottom edge instead (see sky-scene),
     // so the mountain sits behind the copy.
     ridge: compact ? 0 : 0.64,
-    planeScale: Math.min(Math.max(width * 0.17, 130), 290),
+    planeScale: Math.min(Math.max(width * 0.15, 115), 255),
   }
 }
 
@@ -74,8 +79,16 @@ type Point = { x: number; y: number; z: number }
 const TILT = 0.24
 // Depth units → pixels, when turning velocity into a heading.
 const DEPTH_TO_PX = 0.14
-// How strongly depth shrinks the plane.
-const PERSPECTIVE = 0.55
+// How strongly depth shrinks the plane: its size goes as 1 / (1 + z · this).
+const PERSPECTIVE = 0.7
+/**
+ * The depth at which the wandering plane's speed is measured: nearer, it
+ * crosses the screen faster; farther, slower, as it would.
+ */
+const CRUISE_DEPTH = 1.6
+/** How much nearer or farther than the cruise depth things look at depth z. */
+const perspectiveAt = (z: number) =>
+  (1 + CRUISE_DEPTH * PERSPECTIVE) / (1 + z * PERSPECTIVE)
 
 const smoothstep = (a: number, b: number, t: number) => {
   const x = Math.min(1, Math.max(0, (t - a) / (b - a)))
@@ -123,41 +136,78 @@ export function paperProgress(t: number) {
 }
 
 /**
- * The intro flight, as keyframes through 3D: in small and distant from the
- * left, swooping toward the camera mid-screen (behind the big cloud), then
- * banking away into the distance on the right. x and y are viewport
- * fractions, z is depth.
+ * The intro flight through 3D: x and y are viewport fractions, z is depth.
+ *
+ * The way down: roughly an arc, steep where it starts high above the top
+ * left and level at its bottom, coming closer as it goes. Hand-placed rather
+ * than a formula, so it reads as flown. The first and last points only set
+ * the directions it starts and ends in.
  */
-const INTRO_PATH: [number, number, number][] = [
-  [-0.32, 0.31, 2.4],
-  [0.02, 0.24, 1.9],
-  [0.26, 0.2, 1.1],
-  [0.5, 0.27, 0.3],
-  [0.72, 0.21, 1.5],
-  [0.92, 0.15, 2.8],
+const DESCENT: [number, number, number][] = [
+  [-0.22, -0.48, 2.2],
+  [-0.13, -0.3, 2.1],
+  [-0.04, -0.11, 1.92],
+  [0.06, 0.1, 1.64],
+  [0.17, 0.29, 1.3],
+  [0.27, 0.42, 1.1],
+  [0.37, 0.46, 1.0],
+  [0.454, 0.42, 1.1],
+]
+const ARC_BOTTOM = DESCENT[DESCENT.length - 2]
+/**
+ * Out of the arc and away: level, then banking up to the right into the
+ * distance. The first point only sets the direction it comes out of the arc
+ * in (level, at the arc's speed).
+ */
+const EXIT: [number, number, number][] = [
+  [-0.36, 0.4, 1.3],
+  ARC_BOTTOM,
+  [0.6, 0.4, 1.3],
+  [0.76, 0.27, 2.0],
+  [0.94, 0.17, 2.9],
   [1.34, 0.1, 4.2],
 ]
 
+const progress = (t: number, from: number, to: number) =>
+  Math.min(1, Math.max(0, (t - from) / (to - from)))
+
 function introPoint(t: number, layout: Layout): Point {
-  const u = Math.min(
-    1,
-    Math.max(0, (t - INTRO.planeIn) / (INTRO.planeOut - INTRO.planeIn))
-  )
-  // Ease the pace a little: lively entrance, a breath at the swoop.
-  const v = u + 0.035 * Math.sin(u * Math.PI * 2)
-  const [x, y, z] = catmullRom(INTRO_PATH, v)
-  return { x: x * layout.width, y: y * layout.height, z }
+  const { width, height } = layout
+  if (t < INTRO.diveEnd) {
+    // Easing into it, then faster and faster all the way down.
+    const time = progress(t, INTRO.planeIn, INTRO.diveEnd)
+    const [x, y, z] = catmullRom(DESCENT, time * (0.3 + 0.7 * time), true)
+    // A little give in the glide: it lifts and settles, and swings a touch
+    // nearer and farther, gone again by the bottom of the arc.
+    const give = Math.sin(time * Math.PI)
+    return {
+      x: x * width,
+      y: (y + 0.012 * give * Math.sin(time * 9.5 + 0.6)) * height,
+      z: z + 0.07 * give * Math.sin(time * 6.2 + 1.1),
+    }
+  }
+  const u = progress(t, INTRO.diveEnd, INTRO.planeOut)
+  const [x, y, z] = catmullRom(EXIT, u)
+  return { x: x * width, y: y * height, z }
 }
 
-function catmullRom(points: [number, number, number][], u: number) {
-  const segments = points.length - 1
+/**
+ * Catmull-Rom through all but the first point, which only sets the start's
+ * direction (and, with `tail`, the last, which only sets the end's).
+ */
+function catmullRom(
+  points: [number, number, number][],
+  u: number,
+  tail = false
+) {
+  const segments = points.length - (tail ? 3 : 2)
   const f = Math.min(segments - 1e-6, Math.max(0, u * segments))
-  const i = Math.floor(f)
-  const t = f - i
-  const p0 = points[Math.max(0, i - 1)]
+  const i = Math.floor(f) + 1
+  const t = f - (i - 1)
+  const p0 = points[i - 1]
   const p1 = points[i]
   const p2 = points[i + 1]
-  const p3 = points[Math.min(segments, i + 2)]
+  const p3 = points[Math.min(points.length - 1, i + 2)]
   const t2 = t * t
   const t3 = t2 * t
   return [0, 1, 2].map(
@@ -170,12 +220,17 @@ function catmullRom(points: [number, number, number][], u: number) {
   ) as [number, number, number]
 }
 
-/** Extra roll on top of banking: a hello waggle, then an aileron roll. */
+/**
+ * The aileron roll, a full turn about its own length, on the way down: done
+ * before the bottom of the arc, so it comes out of it level.
+ */
 function introFlourish(t: number) {
-  const waggle = smoothstep(0.7, 1.0, t) * (1 - smoothstep(1.6, 1.95, t))
-  const hello = 0.22 * waggle * Math.sin((t - 0.7) * Math.PI * 2 * 1.6)
-  const rollProgress = smoothstep(3.25, 4.15, t)
-  return hello + rollProgress * Math.PI * 2
+  const span = INTRO.diveEnd - INTRO.planeIn
+  return (
+    smoothstep(INTRO.planeIn + span * 0.32, INTRO.planeIn + span * 0.9, t) *
+    Math.PI *
+    2
+  )
 }
 
 function pointAt(t: number, layout: Layout) {
@@ -211,27 +266,25 @@ export function flightAt(
   if (t < INTRO.planeIn - 0.05 || t > INTRO.planeOut + 0.1) return null
 
   const p = pointAt(t, layout)
-  const now = headingAt(t, layout)
-  const later = headingAt(t + 0.12, layout)
-  const turnRate = unwrap(later.yaw, now.yaw) - now.yaw
-
-  // Bank into turns, plus the flourishes; the descent tips the nose down.
-  const roll =
-    Math.max(-0.9, Math.min(0.9, (turnRate / 0.12) * 0.28)) + introFlourish(t)
-  const descent = Math.min(
-    1,
-    Math.max(0, (t - INTRO.cameraStart) / (INTRO.cameraEnd - INTRO.cameraStart))
-  )
-  const dive = -0.22 * Math.sin(Math.PI * descent)
-
-  return {
+  const frame = {
     x: p.x,
     y: p.y,
     scale: layout.planeScale / (1 + p.z * PERSPECTIVE),
-    phase: "intro",
+    phase: "intro" as const,
+  }
+
+  const now = headingAt(t, layout)
+  const later = headingAt(t + 0.12, layout)
+  const turnRate = unwrap(later.yaw, now.yaw) - now.yaw
+  // Bank into turns, plus the roll on the way out.
+  const roll =
+    Math.max(-0.9, Math.min(0.9, (turnRate / 0.12) * 0.28)) + introFlourish(t)
+
+  return {
+    ...frame,
     pose: {
       yaw: now.yaw,
-      pitch: now.pitch * 0.6 + dive,
+      pitch: now.pitch * (t < INTRO.diveEnd ? 0.85 : 0.6),
       roll,
       tilt: TILT,
       prop: t * 19,
@@ -250,6 +303,10 @@ type WanderState = {
   target: { x: number; y: number; z: number }
   targetSince: number
   lastSky: number
+  /** Called over by a double click: heading for that point, fast. */
+  chase: boolean
+  /** Speed against the cruise, easing up for a chase and back after. */
+  boost: number
 }
 
 const STEP = 1 / 60
@@ -290,6 +347,8 @@ export class Wanderer {
       target: { ...skyTargets[0], z: 1.6 },
       targetSince: INTRO.wanderStart,
       lastSky: 0,
+      chase: false,
+      boost: 1,
     }
   }
 
@@ -321,32 +380,62 @@ export class Wanderer {
     s.target = {
       x: choice.point.x + (r() - 0.5) * width * 0.12,
       y: choice.point.y + (r() - 0.5) * height * 0.1,
-      z: 1.4 + r() * 1.0,
+      // Anywhere from fairly close to well off in the distance.
+      z: 0.8 + r() * 2.8,
     }
     s.targetSince = s.t
   }
 
+  /**
+   * Called over to a point on the screen: it turns and heads there quickly,
+   * then eases back into its wandering. It stays about as far off as it is.
+   */
+  flyTo(x: number, y: number) {
+    const s = this.state
+    s.target = { x, y, z: Math.max(0.9, Math.min(2, s.z)) }
+    s.targetSince = s.t
+    s.chase = true
+  }
+
   private step(s: WanderState) {
-    const { speed, depthPx } = this
+    const { depthPx } = this
+    const chase = s.chase
+    s.boost += ((chase ? 2.6 : 1) - s.boost) * Math.min(1, STEP * 2.5)
+    const speed = this.speed * s.boost
+    // On screen, the way to the target looks shorter the farther off it is.
+    const near = perspectiveAt(s.z)
     const dx = s.target.x - s.x
+    const dy = s.target.y - s.y
     const dz = (s.target.z - s.z) * depthPx
-    const desired = Math.atan2(-dz, dx)
-    // Turn toward the target, easing the turn rate so banks roll in and out.
-    const wanted = (unwrap(desired, s.yaw) - s.yaw) * 1.3
+    const desired = Math.atan2(-dz, dx / near)
+    // Turn toward the target, easing the turn rate so banks roll in and out;
+    // called over, it turns harder.
+    const maxTurn = chase ? 2.4 : 0.9
+    const wanted = (unwrap(desired, s.yaw) - s.yaw) * (chase ? 2.4 : 1.3)
     s.turn +=
-      (Math.max(-0.9, Math.min(0.9, wanted)) - s.turn) * Math.min(1, STEP * 1.8)
+      (Math.max(-maxTurn, Math.min(maxTurn, wanted)) - s.turn) *
+      Math.min(1, STEP * (chase ? 5 : 1.8))
     s.yaw += s.turn * STEP
 
+    const maxClimb = chase ? 0.9 : 0.4
     const climbWanted =
-      Math.max(-0.4, Math.min(0.4, (s.target.y - s.y) / 180)) * speed
-    s.climb += (climbWanted - s.climb) * Math.min(1, STEP * 1.1)
+      Math.max(-maxClimb, Math.min(maxClimb, dy / (chase ? 110 : 180))) * speed
+    s.climb += (climbWanted - s.climb) * Math.min(1, STEP * (chase ? 3.5 : 1.1))
 
-    s.x += Math.cos(s.yaw) * speed * STEP
+    s.x += Math.cos(s.yaw) * speed * STEP * near
     s.z -= (Math.sin(s.yaw) * speed * STEP) / depthPx
     s.z = Math.max(0.6, Math.min(4, s.z))
-    s.y += s.climb * STEP
+    s.y += s.climb * STEP * near
     s.t += STEP
 
+    if (chase) {
+      // There (on screen; how far off doesn't matter), or it gave up.
+      if (Math.hypot(dx, dy) < 80 || s.t - s.targetSince > 6) {
+        s.chase = false
+        this.pickTarget(s)
+      }
+      return
+    }
     if (Math.hypot(dx, dz) < 70 || s.t - s.targetSince > 9) this.pickTarget(s)
   }
 
@@ -366,8 +455,9 @@ export class Wanderer {
       phase: "wander",
       pose: {
         yaw: s.yaw,
-        pitch: Math.atan2(-s.climb, this.speed) * 0.6,
-        roll: Math.max(-0.6, Math.min(0.6, s.turn * 0.45)),
+        pitch: Math.atan2(-s.climb, this.speed * s.boost) * 0.6,
+        // Banks harder in the quick turns of a chase.
+        roll: Math.max(-0.95, Math.min(0.95, s.turn * 0.45)),
         tilt: TILT,
         prop: t * 19,
       },

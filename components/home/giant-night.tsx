@@ -24,6 +24,11 @@ import {
   paperShape,
   type PaperRenderer,
 } from "@/components/home/paper"
+import {
+  isInteractive,
+  watchDoubleClicks,
+} from "@/components/home/double-click"
+import { paperFillAt } from "@/components/page-transition"
 
 /**
  * The homepage in dark mode: the falling star from The Iron Giant.
@@ -360,7 +365,6 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
 
     let layout = layoutFor(window.innerWidth, window.innerHeight)
     let clock = scrub ? debug : animateIntro ? 0 : GIANT.settled
-    let speed = 1
     let running = !animateIntro
     let revealed = false
     let lastPaperKey = ""
@@ -420,6 +424,9 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
       }
     )
     const paperColor = readColor(scene)
+    // What the paper becomes when it spreads to change pages: exactly the
+    // background the next page is drawn on.
+    const pageColor = readColor(document.body)
 
     // The land as an alpha mask: whatever falls behind the hills is cut out.
     const land = document.createElement("canvas")
@@ -1265,7 +1272,12 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
       ctx.restore()
     }
 
-    const drawPaper = (t: number, camera: number, sway: number) => {
+    const drawPaper = (
+      t: number,
+      camera: number,
+      sway: number,
+      fill: number
+    ) => {
       const wash = smoothstep(GIANT.paperStart, GIANT.paperEnd, t)
       const keep = readKeepRect()
       const photo = {
@@ -1281,7 +1293,7 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
         const room = Math.max(0, layout.height - keep.bottom)
         bands.bottom = [10, Math.max(52, room * 0.45)]
       }
-      const key = `${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${photo.left.toFixed(1)}`
+      const key = `${wash.toFixed(4)}|${fill.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${photo.left.toFixed(1)}`
       if (key === lastPaperKey) return
       lastPaperKey = key
       if (paper) {
@@ -1301,10 +1313,12 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
           dark: true,
           standing: true,
           veil: VEIL,
+          fill,
+          fillColor: pageColor,
         })
       } else {
         paperCanvas.style.background = `rgb(${paperColor.map((c) => c * 255).join(",")})`
-        paperCanvas.style.opacity = String(wash)
+        paperCanvas.style.opacity = String(Math.max(wash, fill))
       }
     }
 
@@ -1337,6 +1351,7 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
     }
 
     const render = (t: number) => {
+      const fill = paperFillAt(performance.now())
       // The ground shakes when he lands.
       // Two rhythms on each axis, so it rattles instead of bouncing.
       const since = t - GIANT.impact
@@ -1362,7 +1377,7 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
       world.style.transform = `translate3d(${sway}px, ${-camera}px, 0)`
       drawFx(t, camera, sway)
       drawBeacon(t, camera, sway)
-      drawPaper(t, camera, sway)
+      drawPaper(t, camera, sway, fill)
       if (!revealed && t >= GIANT.reveal) {
         revealed = true
         onRevealRef.current?.()
@@ -1384,17 +1399,6 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
     tintBars(clock)
     render(clock)
 
-    // Any touch of the page hurries the intro along.
-    const skip = () => {
-      if (clock < GIANT.paperEnd) speed = 3.2
-    }
-    if (animateIntro) {
-      window.addEventListener("wheel", skip, { passive: true })
-      window.addEventListener("touchstart", skip, { passive: true })
-      window.addEventListener("keydown", skip)
-      window.addEventListener("pointerdown", skip)
-    }
-
     const onResize = () => {
       resize()
       render(clock)
@@ -1410,17 +1414,12 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
     const onPointerLeave = () => {
       pointer.known = false
     }
-    const interactive = (target: EventTarget | null) =>
-      target instanceof Element &&
-      !!target.closest("a, button, input, textarea, select, [role='button']")
-    const onDoubleClick = (event: MouseEvent) => {
-      if (interactive(event.target)) return
-      doubleAt(event.clientX, event.clientY)
-    }
+    // A double click lights the way there (touch has its own, below).
+    const stopDoubleClicks = watchDoubleClicks(doubleAt)
     // Touch: a tap is where he looks; a double tap lights the way there.
     let lastTap = { at: -Infinity, x: 0, y: 0 }
     const onPointerUp = (event: PointerEvent) => {
-      if (event.pointerType !== "touch" || interactive(event.target)) return
+      if (event.pointerType !== "touch" || isInteractive(event.target)) return
       const at = performance.now()
       pointer.x = event.clientX
       pointer.y = event.clientY
@@ -1437,7 +1436,6 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
     }
     window.addEventListener("pointermove", onPointerMove, { passive: true })
     window.addEventListener("pointerup", onPointerUp, { passive: true })
-    window.addEventListener("dblclick", onDoubleClick)
     document.documentElement.addEventListener("mouseleave", onPointerLeave)
 
     let frame = 0
@@ -1456,8 +1454,7 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
         running = true
       }
       if (running && !scrub) {
-        clock += dt * speed
-        if (clock > GIANT.paperEnd) speed = 1
+        clock += dt
       }
       tintBars(clock)
       // Once everything has come to rest only his eyes move, and slowly:
@@ -1478,7 +1475,9 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
         !moving &&
         !beam &&
         wall - closedAt > 0.7
-      if (!resting || frames % 3 === 0) render(clock)
+      // Changing pages, every frame.
+      const filling = paperFillAt(now) > 0
+      if (!resting || filling || frames % 3 === 0) render(clock)
       frame = requestAnimationFrame(tick)
     }
     frame = requestAnimationFrame(tick)
@@ -1489,13 +1488,9 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
       window.removeEventListener("resize", onResize)
       window.removeEventListener("pointermove", onPointerMove)
       window.removeEventListener("pointerup", onPointerUp)
-      window.removeEventListener("dblclick", onDoubleClick)
+      stopDoubleClicks()
       document.documentElement.removeEventListener("mouseleave", onPointerLeave)
       beacon?.dispose()
-      window.removeEventListener("wheel", skip)
-      window.removeEventListener("touchstart", skip)
-      window.removeEventListener("keydown", skip)
-      window.removeEventListener("pointerdown", skip)
       matte.onload = null
       paper?.dispose()
     }

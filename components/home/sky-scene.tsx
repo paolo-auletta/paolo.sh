@@ -26,7 +26,10 @@ import {
   paperShape,
   type PaperRenderer,
 } from "@/components/home/paper"
+import { watchDoubleClicks } from "@/components/home/double-click"
+import { DriftingClouds } from "@/components/home/drifting-clouds"
 import { Smoke } from "@/components/home/smoke"
+import { paperFillAt } from "@/components/page-transition"
 import { cn } from "@/lib/utils"
 
 /** The baked painting: generated sky on top, the film still underneath. */
@@ -140,6 +143,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
   const worldRef = useRef<HTMLDivElement>(null)
   const cloudRefs = useRef<(HTMLDivElement | null)[]>([])
   const planeCanvasRef = useRef<HTMLCanvasElement>(null)
+  const driftCanvasRef = useRef<HTMLCanvasElement>(null)
   const paperCanvasRef = useRef<HTMLCanvasElement>(null)
   const onRevealRef = useRef(onReveal)
   const worldReadyRef = useRef(false)
@@ -160,7 +164,19 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     const planeCanvas = planeCanvasRef.current
     const paperCanvas = paperCanvasRef.current
     const context = planeCanvas?.getContext("2d")
-    if (!scene || !world || !planeCanvas || !paperCanvas || !context) return
+    const driftCanvas = driftCanvasRef.current
+    const driftContext = driftCanvas?.getContext("2d")
+    if (
+      !scene ||
+      !world ||
+      !planeCanvas ||
+      !paperCanvas ||
+      !context ||
+      !driftCanvas ||
+      !driftContext
+    ) {
+      return
+    }
 
     const debugTime =
       process.env.NODE_ENV === "development"
@@ -182,7 +198,6 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       : animateIntro
         ? 0
         : INTRO.settled
-    let speed = 1
     let revealed = false
     let running = !animateIntro
     const mountedAt = performance.now()
@@ -237,6 +252,9 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       planeCanvas.width = Math.round(width * ratio)
       planeCanvas.height = Math.round(height * ratio)
       context.setTransform(ratio, 0, 0, ratio, 0, 0)
+      driftCanvas.width = Math.round(width * ratio)
+      driftCanvas.height = Math.round(height * ratio)
+      driftContext.setTransform(ratio, 0, 0, ratio, 0, 0)
       paper?.resize(width, height, ratio)
       lastPaperKey = ""
       smoke.clear()
@@ -266,10 +284,86 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       })
     }
 
-    const drawPlane = (frame: FlightFrame | null, t: number) => {
+    // The still on screen, wherever the camera is.
+    const photoRect = () => ({
+      left: (layout.width - WORLD.width * worldScale) / 2,
+      top: (WORLD.height - PHOTO_HEIGHT) * worldScale - camera,
+      width: WORLD.width * worldScale,
+      height: PHOTO_HEIGHT * worldScale,
+    })
+
+    // The land as a mask, from the same matte the paper uses: the plane and
+    // the clouds only ever fly in the sky, behind the hills, the trees and
+    // the rock. Also where the land's top edge is, column by column, so the
+    // plane can't be called down into it.
+    const landMask = document.createElement("canvas")
+    let landTops: Float32Array | null = null
+    const landImage = new window.Image()
+    landImage.decoding = "async"
+    landImage.src = LAND_MATTE
+    landImage.onload = () => {
+      const { naturalWidth: w, naturalHeight: h } = landImage
+      landMask.width = w
+      landMask.height = h
+      const m = landMask.getContext("2d", { willReadFrequently: true })
+      if (!m) return
+      m.drawImage(landImage, 0, 0)
+      const data = m.getImageData(0, 0, w, h)
+      const tops = new Float32Array(w).fill(1)
+      for (let i = 0; i < w * h; i++) {
+        const land = data.data[i * 4]
+        data.data[i * 4 + 3] = land
+        if (land > 110) {
+          const column = i % w
+          const row = (i / w) | 0
+          if (row / h < tops[column]) tops[column] = row / h
+        }
+      }
+      m.putImageData(data, 0, 0)
+      landTops = tops
+    }
+    const cutLand = (target: CanvasRenderingContext2D) => {
+      if (!landTops) return
+      const photo = photoRect()
+      target.save()
+      target.globalCompositeOperation = "destination-out"
+      target.drawImage(
+        landMask,
+        photo.left,
+        photo.top,
+        photo.width,
+        photo.height
+      )
+      target.restore()
+    }
+    /** Screen y of the top of the land at a screen x (its highest nearby). */
+    const landTopAt = (x: number) => {
+      if (!landTops) return layout.height
+      const photo = photoRect()
+      const column = Math.round(
+        ((x - photo.left) / photo.width) * landTops.length
+      )
+      let top = 1
+      for (let c = column - 12; c <= column + 12; c++) {
+        top = Math.min(
+          top,
+          landTops[Math.max(0, Math.min(landTops.length - 1, c))]
+        )
+      }
+      return photo.top + top * photo.height
+    }
+
+    const drawPlane = (frame: FlightFrame | null, t: number, fill: number) => {
+      paintPlane(frame, t, fill)
+      cutLand(context)
+    }
+
+    const paintPlane = (frame: FlightFrame | null, t: number, fill: number) => {
       context.clearRect(0, 0, layout.width, layout.height)
-      // Over the paper on the way in; inside the sky window once circling.
-      planeCanvas.style.zIndex = frame?.phase === "intro" ? "3" : "1"
+      // Over the paper on the way in; inside the sky window once circling,
+      // and always under it while it spreads to change pages.
+      planeCanvas.style.zIndex =
+        frame?.phase === "intro" && fill === 0 ? "3" : "1"
       // Smoke runs on the scene clock, so it pauses with it.
       const dt = Math.min(0.1, Math.max(0, t - smokeClock))
       smokeClock = t
@@ -335,7 +429,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       }
     }
 
-    const drawPaper = (t: number) => {
+    const drawPaper = (t: number, fill: number) => {
       const wash = paperProgress(t)
       const keep = readKeepRect()
       const photo = {
@@ -346,7 +440,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       }
       const { mist, bands, hug } = paperShape(layout.width, layout.height, keep)
       const mistEnd = mist.end
-      const key = `${mistEnd.toFixed(0)}|${hug.toFixed(0)}|${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}`
+      const key = `${mistEnd.toFixed(0)}|${hug.toFixed(0)}|${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}|${fill.toFixed(4)}`
       if (key === lastPaperKey) return
       lastPaperKey = key
       if (paper) {
@@ -364,11 +458,38 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
           hug,
           color: paperColor,
           dark: isDark,
+          fill,
         })
       } else {
         paperCanvas.style.background = `rgb(${paperColor.map((c) => c * 255).join(",")})`
-        paperCanvas.style.opacity = String(wash)
+        paperCanvas.style.opacity = String(Math.max(wash, fill))
       }
+    }
+
+    // Once the page has settled, clouds come and go in the sky above the
+    // hills, as at night. Not for reduced motion.
+    const drifting = new DriftingClouds()
+    let drewDrifters = false
+    const drawDrifters = (t: number) => {
+      if (reducedMotion || t < INTRO.paperEnd) {
+        if (drewDrifters)
+          driftContext.clearRect(0, 0, layout.width, layout.height)
+        drewDrifters = false
+        return
+      }
+      drewDrifters = true
+      driftContext.clearRect(0, 0, layout.width, layout.height)
+      // The ridge on screen, wherever the camera has come to rest.
+      const ridge =
+        (WORLD.height - PHOTO_HEIGHT + RIDGE_ROW) * worldScale - camera
+      drifting.draw(driftContext, performance.now() / 1000, {
+        width: layout.width,
+        height: layout.height,
+        top: layout.height * 0.05,
+        bottom: Math.max(layout.height * 0.12, ridge - layout.height * 0.1),
+        scale: worldScale,
+      })
+      cutLand(driftContext)
     }
 
     const frameAt = (t: number) =>
@@ -385,10 +506,12 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     }
 
     const render = (t: number) => {
+      const fill = paperFillAt(performance.now())
       tintBars(t)
       placeScene(t)
-      drawPlane(frameAt(t), t)
-      drawPaper(t)
+      drawDrifters(t)
+      drawPlane(frameAt(t), t, fill)
+      drawPaper(t, fill)
       if (!revealed && t >= INTRO.reveal) {
         revealed = true
         onRevealRef.current()
@@ -398,21 +521,24 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     resize()
     render(clock)
 
-    const skip = () => {
-      if (clock < INTRO.paperEnd) speed = 3.2
-    }
-    if (animateIntro) {
-      window.addEventListener("wheel", skip, { passive: true })
-      window.addEventListener("touchstart", skip, { passive: true })
-      window.addEventListener("keydown", skip)
-      window.addEventListener("pointerdown", skip)
-    }
-
     const onResize = () => {
       resize()
       render(clock)
     }
     window.addEventListener("resize", onResize)
+
+    // A double click (or tap) calls the plane over, once it is wandering.
+    const stopDoubleClicks = watchDoubleClicks(
+      (x, y) => {
+        if (reducedMotion || clock < INTRO.wanderStart) return
+        // It can only be called to the sky: below the top of the land, it
+        // comes to the sky just above it instead.
+        const margin = Math.max(40, layout.height * 0.07)
+        const sky = landTopAt(x) - margin
+        wanderer.flyTo(x, Math.max(layout.height * 0.05, Math.min(y, sky)))
+      },
+      { touch: true }
+    )
 
     const themeObserver = new MutationObserver(() => {
       paperColor = readPaperColor()
@@ -438,8 +564,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
         running = true
       }
       if (running && !Number.isFinite(debugTime)) {
-        clock += dt * speed
-        if (clock > INTRO.paperEnd) speed = 1
+        clock += dt
       }
       render(clock)
       frameId = requestAnimationFrame(tick)
@@ -450,11 +575,9 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       cancelAnimationFrame(frameId)
       releaseHome()
       window.removeEventListener("resize", onResize)
-      window.removeEventListener("wheel", skip)
-      window.removeEventListener("touchstart", skip)
-      window.removeEventListener("keydown", skip)
-      window.removeEventListener("pointerdown", skip)
+      stopDoubleClicks()
       themeObserver.disconnect()
+      landImage.onload = null
       paper?.dispose()
     }
   }, [playIntro])
@@ -499,6 +622,11 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
             />
           )
         )}
+        {/* Clouds coming and going once the page has settled. */}
+        <canvas
+          ref={driftCanvasRef}
+          className="absolute inset-0 h-full w-full"
+        />
       </div>
       <canvas
         ref={planeCanvasRef}

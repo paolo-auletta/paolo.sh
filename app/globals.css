@@ -174,3 +174,39 @@ html:not([data-home-ready]) [data-home-fallback] {
 ) {
   z-index: 50 !important;
 }
+
+/*
+ * Changing pages (components/page-transition.tsx). Leaving the homepage, the
+ * copy lifts off while the paper spreads out to become the next page's
+ * background. Leaving another page for the homepage, its content fades out
+ * first, and the homepage's paper draws back in around its copy.
+ */
+html[data-home-leaving] [data-home-copy] {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition:
+    opacity 0.24s var(--ease-out-strong),
+    filter 0.24s var(--ease-out-strong),
+    transform 0.24s var(--ease-out-strong);
+}
+
+/*
+ * An open link preview goes with the copy. Its content animates its own
+ * opacity inline, so this fades the popper wrapper around it instead.
+ */
+html[data-home-leaving] [data-radix-popper-content-wrapper] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.16s ease-out;
+}
+
+html[data-page-leaving] body > * {
+  opacity: 0;
+  filter: blur(6px);
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease-out,
+    filter 0.16s ease-out;
+}

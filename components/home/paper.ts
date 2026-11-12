@@ -37,6 +37,8 @@ uniform float uGrain;
 uniform float uHug;         // px: how far the paper holds the scene back from the copy
 uniform float uStanding;    // phones: 1 = what stands on the land is cut out over the paper
 uniform float uVeil;        // how opaque the paper is at its thickest
+uniform float uFill;        // 0 → 1: the paper spreading out to cover the screen
+uniform vec3 uFillColor;    // the page background the paper becomes
 
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));
@@ -64,6 +66,12 @@ float fbm(vec2 p) {
     amplitude *= 0.5;
   }
   return value;
+}
+
+// Distance outside a rounded box; anywhere inside it counts as its edge.
+float fillDistance(vec2 p, vec2 center, vec2 halfSize, float corner) {
+  vec2 q = abs(p - center) - (halfSize - corner);
+  return max(length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - corner, 0.0);
 }
 
 // x: the land. y: what stands on it (the night scene's pines).
@@ -142,20 +150,52 @@ void main() {
   float washed = smoothstep(-180.0, 180.0, front);
   paper *= washed;
 
+  // Changing pages: the paper spreads out from the copy until it is the whole
+  // page background. Measured from the copy's edge (all of it counts as the
+  // edge), so at 0 it adds nothing and at 1 it reaches past the farthest
+  // corner.
+  float fillCorner = min(halfSize.x, halfSize.y);
+  float dFill = fillDistance(p, center, halfSize, fillCorner);
+  // The farthest the front has to go: the screen's farthest corner.
+  float fillFar = max(
+    max(fillDistance(vec2(0.0), center, halfSize, fillCorner),
+        fillDistance(vec2(uResolution.x, 0.0), center, halfSize, fillCorner)),
+    max(fillDistance(vec2(0.0, uResolution.y), center, halfSize, fillCorner),
+        fillDistance(uResolution, center, halfSize, fillCorner)));
+  float fillReach = mix(-480.0, fillFar + 480.0, uFill);
+  // A front that wanders a lot, in long tongues and shorter bays.
+  float wander = (fbm(p * 0.0028 + 21.0) - 0.5) * 300.0
+    + (fbm(p * 0.009 + 33.0) - 0.5) * 110.0;
+  float fillFront = fillReach - dFill + wander;
+  // How thick the paper is getting here, across a wide band (-0.3 → 1.3)...
+  float density = smoothstep(-260.0, 260.0, fillFront) * 1.6 - 0.3;
+  // ...which it reaches unevenly, like the mist around the copy: soft cloudy
+  // patches thicken ahead of the front and thin ones linger behind it, all
+  // blended rather than cut out.
+  float clumps = fbm(p * 0.006 + 40.0);
+  float filled = uFill > 0.0
+    ? smoothstep(clumps - 0.3, clumps + 0.3, density)
+    : 0.0;
+  paper = max(paper, filled);
+
   // A veil rather than paper: never fully opaque, and thinner the farther
-  // it is from the copy, so the scene shows through more around it.
+  // it is from the copy, so the scene shows through more around it. Where
+  // the paper spreads to fill the page it thickens as it goes, from the
+  // veil's own opacity to solid just before it covers the screen.
   float body = paper;
-  paper = uVeil * pow(paper, 1.0 + (1.0 - uVeil) * 1.6);
+  float veil = mix(uVeil, 1.0, filled * smoothstep(0.0, 0.85, uFill));
+  paper = veil * pow(paper, 1.0 + (1.0 - veil) * 1.6);
 
   // Grain: transitions break up into fine speckle instead of a hard line.
   float grain = hash(floor(p * uPixelRatio));
   // Only where the paper itself gives way: a veil is see-through all over,
   // and grain across all of it would read as a screen door.
   float edge = 1.0 - abs(2.0 * body - 1.0);
-  float alpha = clamp(paper + (grain - 0.5) * 0.22 * uVeil * edge, 0.0, 1.0);
+  float alpha = clamp(paper + (grain - 0.5) * 0.22 * veil * edge, 0.0, 1.0);
 
+  // Filled, it is the page's own flat background: no speckle, same color.
   float speck = hash(floor(p * uPixelRatio) + 7.0) - 0.5;
-  vec3 color = uPaper * (1.0 - speck * uGrain);
+  vec3 color = mix(uPaper, uFillColor, filled) * (1.0 - speck * uGrain * (1.0 - filled));
   gl_FragColor = vec4(color * alpha, alpha);
 }
 `
@@ -194,6 +234,13 @@ export type PaperFrame = {
    * becomes a veil that the scene shows through, more so toward its edges.
    */
   veil?: number
+  /**
+   * 0–1: the paper spreading out from the copy to cover the whole screen,
+   * for changing pages (default 0).
+   */
+  fill?: number
+  /** The color the paper becomes where it fills the page (default `color`). */
+  fillColor?: [number, number, number]
 }
 
 type Keep = { left: number; top: number; right: number; bottom: number }
@@ -303,6 +350,8 @@ export function createPaperRenderer(
     hug: uniform("uHug"),
     standing: uniform("uStanding"),
     veil: uniform("uVeil"),
+    fill: uniform("uFill"),
+    fillColor: uniform("uFillColor"),
   }
 
   const texture = gl.createTexture()
@@ -356,6 +405,8 @@ export function createPaperRenderer(
       dark,
       standing,
       veil = 1,
+      fill = 0,
+      fillColor = color,
     }) {
       gl.uniform2f(u.resolution, layout.width, layout.height)
       gl.uniform1f(u.pixelRatio, pixelRatio)
@@ -377,6 +428,8 @@ export function createPaperRenderer(
       gl.uniform1f(u.hug, hug)
       gl.uniform1f(u.standing, standing ? 1 : 0)
       gl.uniform1f(u.veil, veil)
+      gl.uniform1f(u.fill, fill)
+      gl.uniform3f(u.fillColor, fillColor[0], fillColor[1], fillColor[2])
       gl.uniform1f(u.grain, dark ? 0.03 : 0.012)
       gl.clearColor(0, 0, 0, 0)
       gl.clear(gl.COLOR_BUFFER_BIT)

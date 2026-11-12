@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next"
 
 import "./globals.css"
 import { PagePrefetcher } from "@/components/page-prefetcher"
+import { PageTransitions } from "@/components/page-transition"
 import { ThemeProvider } from "@/components/theme-provider"
 import { musicArchiveNavigation } from "@/lib/music"
 import { cn } from "@/lib/utils"
@@ -68,6 +69,7 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <PagePrefetcher hrefs={pagePrefetchHrefs} />
+          <PageTransitions />
         </ThemeProvider>
       </body>
     </html>
