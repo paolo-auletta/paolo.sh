@@ -538,9 +538,13 @@ export default function Page() {
                 transition={entranceTransition(0.52)}
               >
                 <span>You can check out my </span>
-                <Link href="/projects">
-                  <span className={inlineLinkClassName}>personal projects</span>
-                </Link>
+                <a
+                  href="https://github.com/paolo-auletta"
+                  {...externalLinkProps}
+                  className={inlineLinkClassName}
+                >
+                  personal projects
+                </a>
                 <span> and </span>
                 <Link href="/research">
                   <span className={inlineLinkClassName}>research</span>
