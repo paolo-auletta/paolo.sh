@@ -143,14 +143,14 @@ export function paperProgress(t: number) {
  * the lens shrinks and slows it on screen as it leaves. So its speed and
  * heading never jump.
  */
-type Key = readonly [x: number, y: number, near: number]
+export type Key = readonly [x: number, y: number, near: number]
 
 /**
  * Wide screens: out of the high sky on the left, one long glide down and
  * toward us, a level pass at its closest, then banking up to the right
  * into the distance.
  */
-const WIDE_PATH: Key[] = [
+export const WIDE_PATH: Key[] = [
   [-0.06, 0.04, 0.5],
   [0.07, 0.12, 0.6],
   [0.19, 0.27, 0.8],
