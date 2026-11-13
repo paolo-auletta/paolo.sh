@@ -2,37 +2,21 @@
 
 import { useEffect, useState } from "react"
 
-const animatedPageKeys = new Set<string>()
+const visited = new Set<string>()
 
-export function usePageEntranceAnimation(
-  pageKey: string,
-  resetLocalAnimationAfterMs = 2200
-) {
-  const [shouldAnimate, setShouldAnimate] = useState(() => {
-    if (typeof window === "undefined") {
-      return true
-    }
-
-    if (animatedPageKeys.has(pageKey)) {
-      return false
-    }
-
-    return true
-  })
+/**
+ * True on a page's first visit in this session, until its entrance has had
+ * time to play (2.2s). Coming back to the page shows it straight away.
+ */
+export function useFirstVisit(pageKey: string) {
+  const [first, setFirst] = useState(() => !visited.has(pageKey))
 
   useEffect(() => {
-    animatedPageKeys.add(pageKey)
-
-    if (!shouldAnimate) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setShouldAnimate(false)
-    }, resetLocalAnimationAfterMs)
-
+    visited.add(pageKey)
+    if (!first) return
+    const timeoutId = window.setTimeout(() => setFirst(false), 2200)
     return () => window.clearTimeout(timeoutId)
-  }, [pageKey, resetLocalAnimationAfterMs, shouldAnimate])
+  }, [pageKey, first])
 
-  return shouldAnimate
+  return first
 }

@@ -1,10 +1,15 @@
 import { ActivityArchivePage } from "@/components/activity-archive-page"
+import {
+  MovieActivityRows,
+  PinnedFilmCards,
+} from "@/components/movies/movie-activity"
 import { getCurrentMonthLabel } from "@/lib/date"
 import {
   getRecentLetterboxdMovies,
   LETTERBOXD_PROFILE_URL,
 } from "@/lib/letterboxd"
 import { pageMetadata } from "@/lib/metadata"
+import { fallbackMovieActivity, pinnedFilms } from "@/lib/movies"
 
 export const metadata = pageMetadata({
   title: "Movies",
@@ -21,7 +26,12 @@ export default async function MoviesPage() {
     <ActivityArchivePage
       title="Movies"
       monthLabel={getCurrentMonthLabel()}
-      movies={movies}
+      pinned={<PinnedFilmCards films={pinnedFilms} />}
+      rows={
+        <MovieActivityRows
+          movies={movies.length > 0 ? movies : fallbackMovieActivity}
+        />
+      }
       viewAllHref={LETTERBOXD_PROFILE_URL}
     />
   )

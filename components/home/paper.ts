@@ -1,3 +1,13 @@
+import {
+  bindFullScreenQuad,
+  GLSL_HASH,
+  link,
+  QUAD_VERTEX,
+  sizeCanvas,
+  uniformsOf,
+} from "@/components/home/gl"
+import type { Keep } from "@/components/home/scene-dom"
+
 /**
  * The "paper" laid over the painting once we land. It dissolves in outward
  * from the text as a soft white mist:
@@ -9,13 +19,6 @@
  *
  * Transitions dissolve through a fine grain rather than a hard line.
  */
-
-const VERTEX = `
-attribute vec2 aPosition;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-}
-`
 
 const FRAGMENT = `
 precision highp float;
@@ -40,11 +43,7 @@ uniform float uVeil;        // how opaque the paper is at its thickest
 uniform float uFill;        // 0 → 1: the paper spreading out to cover the screen
 uniform vec3 uFillColor;    // the page background the paper becomes
 
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
+${GLSL_HASH}
 
 float noise(vec2 p) {
   vec2 i = floor(p);
@@ -200,11 +199,11 @@ void main() {
 }
 `
 
-export type PaperFrame = {
+type PaperFrame = {
   layout: { width: number; height: number }
   wash: number
   origin: { x: number; y: number }
-  keep: { left: number; top: number; right: number; bottom: number }
+  keep: Keep
   photo: { left: number; top: number; width: number; height: number }
   /**
    * Distance from the copy where the mist starts and finishes thinning, how
@@ -242,8 +241,6 @@ export type PaperFrame = {
   /** The color the paper becomes where it fills the page (default `color`). */
   fillColor?: [number, number, number]
 }
-
-type Keep = { left: number; top: number; right: number; bottom: number }
 
 /**
  * The paper's shape for a screen and where the copy sits on it. Shared by
@@ -316,43 +313,32 @@ export function createPaperRenderer(
   })
   if (!gl) return null
 
-  const program = link(gl, VERTEX, FRAGMENT)
+  const program = link(gl, QUAD_VERTEX, FRAGMENT)
   if (!program) return null
 
-  const buffer = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-    gl.STATIC_DRAW
-  )
-  const position = gl.getAttribLocation(program, "aPosition")
-  gl.enableVertexAttribArray(position)
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
-  gl.useProgram(program)
+  const buffer = bindFullScreenQuad(gl, program)
 
-  const uniform = (name: string) => gl.getUniformLocation(program, name)
-  const u = {
-    resolution: uniform("uResolution"),
-    pixelRatio: uniform("uPixelRatio"),
-    wash: uniform("uWash"),
-    origin: uniform("uOrigin"),
-    keep: uniform("uKeep"),
-    photo: uniform("uPhoto"),
-    land: uniform("uLand"),
-    hasLand: uniform("uHasLand"),
-    paper: uniform("uPaper"),
-    grain: uniform("uGrain"),
-    mist: uniform("uMist"),
-    compact: uniform("uCompact"),
-    bands: uniform("uBands"),
-    bandDrift: uniform("uBandDrift"),
-    hug: uniform("uHug"),
-    standing: uniform("uStanding"),
-    veil: uniform("uVeil"),
-    fill: uniform("uFill"),
-    fillColor: uniform("uFillColor"),
-  }
+  const u = uniformsOf(gl, program, {
+    resolution: "uResolution",
+    pixelRatio: "uPixelRatio",
+    wash: "uWash",
+    origin: "uOrigin",
+    keep: "uKeep",
+    photo: "uPhoto",
+    land: "uLand",
+    hasLand: "uHasLand",
+    paper: "uPaper",
+    grain: "uGrain",
+    mist: "uMist",
+    compact: "uCompact",
+    bands: "uBands",
+    bandDrift: "uBandDrift",
+    hug: "uHug",
+    standing: "uStanding",
+    veil: "uVeil",
+    fill: "uFill",
+    fillColor: "uFillColor",
+  })
 
   const texture = gl.createTexture()
   let hasLand = false
@@ -388,9 +374,7 @@ export function createPaperRenderer(
   return {
     resize(width, height, ratio) {
       pixelRatio = ratio
-      canvas.width = Math.round(width * ratio)
-      canvas.height = Math.round(height * ratio)
-      gl.viewport(0, 0, canvas.width, canvas.height)
+      sizeCanvas(gl, canvas, width, height, ratio)
     },
     render({
       layout,
@@ -442,36 +426,4 @@ export function createPaperRenderer(
       gl.deleteProgram(program)
     },
   }
-}
-
-export function link(
-  gl: WebGLRenderingContext,
-  vertex: string,
-  fragment: string
-) {
-  const compile = (type: number, source: string) => {
-    const shader = gl.createShader(type)
-    if (!shader) return null
-    gl.shaderSource(shader, source)
-    gl.compileShader(shader)
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error(gl.getShaderInfoLog(shader))
-      gl.deleteShader(shader)
-      return null
-    }
-    return shader
-  }
-
-  const vs = compile(gl.VERTEX_SHADER, vertex)
-  const fs = compile(gl.FRAGMENT_SHADER, fragment)
-  const program = gl.createProgram()
-  if (!vs || !fs || !program) return null
-  gl.attachShader(program, vs)
-  gl.attachShader(program, fs)
-  gl.linkProgram(program)
-  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-    console.error(gl.getProgramInfoLog(program))
-    return null
-  }
-  return program
 }

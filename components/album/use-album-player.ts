@@ -78,24 +78,8 @@ export function useAlbumPlayer() {
 
   /** The big play button: resume, or start from the top. */
   const toggle = useCallback(() => {
-    toggleTrack(currentRef.current ?? PLAYABLE[0]!)
+    toggleTrack(currentRef.current ?? PLAYABLE[0])
   }, [toggleTrack])
-
-  const step = useCallback(
-    (dir: 1 | -1) => {
-      const at = PLAYABLE.findIndex((t) => t.n === currentRef.current?.n)
-      const next = PLAYABLE[at + dir]
-      if (next) load(next)
-    },
-    [load]
-  )
-
-  const seek = useCallback((seconds: number) => {
-    const audio = audioRef.current
-    if (!audio) return
-    audio.currentTime = seconds
-    setProgress(seconds)
-  }, [])
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
@@ -108,8 +92,8 @@ export function useAlbumPlayer() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space" || e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
-      const t = e.target as HTMLElement | null
-      if (t?.closest("input, textarea, select, button, a, [contenteditable='true']")) return
+      const t = e.target
+      if (t instanceof Element && t.closest("input, textarea, select, button, a, [contenteditable='true']")) return
       e.preventDefault()
       toggle()
     }
@@ -125,9 +109,6 @@ export function useAlbumPlayer() {
     muted,
     toggle,
     toggleTrack,
-    next: () => step(1),
-    prev: () => step(-1),
-    seek,
     toggleMute,
   }
 }

@@ -6,7 +6,11 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import { type MusicArchiveMonth, type MusicArchiveYear } from "@/lib/music"
+import { EASE } from "@/components/motion/entrance"
+import {
+  type MusicArchiveMonth,
+  type MusicArchiveYear,
+} from "@/lib/music/types"
 
 type MusicArchiveNavProps = {
   navigation: MusicArchiveYear[]
@@ -14,7 +18,6 @@ type MusicArchiveNavProps = {
   selectedYear: MusicArchiveYear
 }
 
-const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 const backLinkClassName =
   "mt-8 block w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50 2xl:mt-10"
 
@@ -85,7 +88,7 @@ export function MusicArchiveNav({
           className="mt-3 flex gap-4 overflow-x-auto pb-1 text-sm leading-none [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           initial={reducedMotion ? false : { opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.22, ease }}
+          transition={{ duration: 0.22, ease: EASE }}
         >
           {[...selectedYear.months].reverse().map((month, index) => {
             const isSelected = month.slug === selectedMonth.slug
@@ -106,7 +109,7 @@ export function MusicArchiveNav({
                 transition={{
                   duration: 0.18,
                   delay: reducedMotion ? 0 : index * 0.015,
-                  ease,
+                  ease: EASE,
                 }}
                 onClick={() => router.push(getArchiveHref(selectedYear, month))}
               >
@@ -150,7 +153,7 @@ export function MusicArchiveNav({
                         ? { height: "auto", opacity: 1, y: 0 }
                         : { height: 0, opacity: 0, y: -4 }
                     }
-                    transition={{ duration: 0.28, ease }}
+                    transition={{ duration: 0.28, ease: EASE }}
                   >
                     {year.months.map((month, index) => {
                       const isSelected = month.slug === selectedMonth.slug
@@ -165,7 +168,7 @@ export function MusicArchiveNav({
                           transition={{
                             duration: 0.18,
                             delay: reducedMotion ? 0 : index * 0.018,
-                            ease,
+                            ease: EASE,
                           }}
                         >
                           <button

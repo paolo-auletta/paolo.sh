@@ -23,9 +23,6 @@ export const ALBUM = {
   recorded: "Roma and Athens · 2024–2025",
   recordedPlaces: "Roma & Athens",
   recordedYears: "2024–2025",
-  blurb:
-    "A small, mostly silent record made between bedrooms and basements — half love letter, half inside joke.",
-  cover: "/album/cover.jpg",
 }
 
 export const TRACKS: Track[] = [
@@ -46,16 +43,18 @@ export function formatTime(seconds: number | null | undefined) {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
-export function downloadName(track: Track) {
+function downloadName(track: Track) {
   const ext = track.file?.split(".").pop() ?? "mp3"
   return `${String(track.n).padStart(2, "0")} ${track.title}.${ext}`
 }
 
+const hasFile = (t: Track): t is Track & { file: string } => Boolean(t.file)
+
 export function downloadAll() {
-  TRACKS.filter((t) => t.file).forEach((track, i) => {
+  TRACKS.filter(hasFile).forEach((track, i) => {
     window.setTimeout(() => {
       const a = document.createElement("a")
-      a.href = track.file!
+      a.href = track.file
       a.download = downloadName(track)
       document.body.appendChild(a)
       a.click()
