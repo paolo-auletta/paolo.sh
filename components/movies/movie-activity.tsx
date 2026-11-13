@@ -18,7 +18,7 @@ export function PinnedFilmCards({ films }: { films: PinnedFilm[] }) {
     >
       <Artwork
         alt={`${film.title} poster`}
-        className="relative overflow-hidden border border-border/70 shadow-sm aspect-[2/3]"
+        className="relative aspect-[2/3] overflow-hidden border border-border/70 shadow-sm"
         imageClassName="object-cover"
         initialsClassName="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70"
         paper="cover"
@@ -81,7 +81,7 @@ export function MovieActivityRows({ movies }: { movies: LetterboxdMovie[] }) {
         <div className="grid min-h-18 grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 py-2.5 sm:min-h-20 sm:grid-cols-[2.75rem_minmax(0,1fr)_auto] sm:gap-4 sm:py-3">
           <Artwork
             alt={`${movie.title} poster`}
-            className="relative shrink-0 overflow-hidden border border-border/70 shadow-sm aspect-[2/3] w-10 sm:w-11"
+            className="relative aspect-[2/3] w-10 shrink-0 overflow-hidden border border-border/70 shadow-sm sm:w-11"
             imageClassName="object-cover"
             initialsClassName="absolute right-1 bottom-1 font-serif text-[10px] font-semibold text-muted-foreground/70"
             sizes="44px"

@@ -9,7 +9,7 @@ export function PinnedAlbumCards({ albums }: { albums: MusicAlbum[] }) {
     <div key={album.title} data-paper="card" className="min-w-0">
       <Artwork
         alt={`${album.title} poster`}
-        className="relative overflow-hidden border border-border/70 shadow-sm aspect-square"
+        className="relative aspect-square overflow-hidden border border-border/70 shadow-sm"
         imageClassName="object-cover"
         initialsClassName="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70"
         paper="cover"
@@ -38,7 +38,7 @@ export function SongActivityRows({ songs }: { songs: MusicSong[] }) {
         {/* The "poster" alt is the list's own, kept as it has always read. */}
         <Artwork
           alt={`${song.title} poster`}
-          className="relative shrink-0 overflow-hidden border border-border/70 shadow-sm size-12 sm:size-13"
+          className="relative size-12 shrink-0 overflow-hidden border border-border/70 shadow-sm sm:size-13"
           imageClassName="object-cover"
           initialsClassName="absolute right-1 bottom-1 font-serif text-[10px] font-semibold text-muted-foreground/70"
           sizes="44px"
