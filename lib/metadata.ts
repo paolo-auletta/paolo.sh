@@ -28,6 +28,8 @@ type Card = { image: Image; still: Image }
  *
  * A link preview can't follow the reader's theme, so one of them has to be
  * the card everywhere: `CARD` picks which.
+ *
+ * Rendered from the homepage's own code by scripts/og/build.sh.
  */
 const SKIES = {
   day: sky(
