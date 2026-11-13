@@ -1,4 +1,5 @@
 import { MusicAllArchivePage } from "@/components/music-all-archive-page"
+import { pageMetadata } from "@/lib/metadata"
 import {
   getMusicRecap,
   musicArchiveNavigation,
@@ -37,6 +38,18 @@ function getArchiveSelection({
     selectedMonth,
     selectedYear,
   }
+}
+
+export async function generateMetadata({ searchParams }: MusicAllPageProps) {
+  const { selectedMonth, selectedYear } = getArchiveSelection(
+    await searchParams
+  )
+  const month = `${selectedMonth.label} ${selectedYear.year}`
+  return pageMetadata({
+    title: `Music, ${month}`,
+    description: `The albums and songs I played most in ${month}, and every month before it.`,
+    path: `/music/all?year=${selectedYear.year}&month=${selectedMonth.slug}`,
+  })
 }
 
 export default async function MusicAllPage({

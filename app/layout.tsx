@@ -6,6 +6,7 @@ import "./globals.css"
 import { PagePrefetcher } from "@/components/page-prefetcher"
 import { PageTransitions } from "@/components/page-transition"
 import { ThemeProvider } from "@/components/theme-provider"
+import { rootMetadata } from "@/lib/metadata"
 import { musicArchiveNavigation } from "@/lib/music"
 import { cn } from "@/lib/utils"
 
@@ -24,9 +25,7 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-export const metadata: Metadata = {
-  metadataBase: new URL("https://paolo.sh"),
-}
+export const metadata: Metadata = rootMetadata
 
 const staticPageHrefs = [
   "/",

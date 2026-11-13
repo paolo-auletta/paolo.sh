@@ -1,11 +1,13 @@
-import type { Metadata } from "next"
 import Link from "next/link"
 
-export const metadata: Metadata = {
-  title: "mute — privacy",
+import { pageMetadata } from "@/lib/metadata"
+
+export const metadata = pageMetadata({
+  title: "mute: privacy",
   description:
     "What the mute extension sends, where it goes, and what it keeps.",
-}
+  path: "/mute/privacy",
+})
 
 const UPDATED = "20 September 2026"
 

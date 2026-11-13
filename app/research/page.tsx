@@ -1,5 +1,14 @@
 import Link from "next/link"
 
+import { pageMetadata } from "@/lib/metadata"
+
+export const metadata = pageMetadata({
+  title: "Research",
+  description:
+    "Notes, experiments, and research work on AI, mostly mechanistic interpretability and automated research. Coming soon.",
+  path: "/research",
+})
+
 export default function ResearchPage() {
   return (
     <div className="relative flex min-h-svh flex-col">

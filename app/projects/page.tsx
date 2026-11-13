@@ -1,5 +1,13 @@
 import Link from "next/link"
 
+import { pageMetadata } from "@/lib/metadata"
+
+export const metadata = pageMetadata({
+  title: "Projects",
+  description: "What I am building right now: Better Skills and mute.",
+  path: "/projects",
+})
+
 const linkClassName =
   "w-fit font-medium text-primary underline decoration-muted-foreground/25 decoration-1 underline-offset-3 transition-all hover:decoration-muted-foreground"
 
