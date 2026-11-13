@@ -63,8 +63,18 @@ function RatingStars({ rating }: { rating: number }) {
   )
 }
 
-/** Diary entries, as the rows of /movies' activity list. */
-export function MovieActivityRows({ movies }: { movies: LetterboxdMovie[] }) {
+/**
+ * Diary entries, as the rows of /movies' activity list. `landing` is the
+ * row of the film the homepage names: its poster is where the homepage's
+ * preview is carried to (components/motion/carried-cover.ts).
+ */
+export function MovieActivityRows({
+  movies,
+  landing,
+}: {
+  movies: LetterboxdMovie[]
+  landing?: number
+}) {
   return movies.map((movie, index) => (
     // A rewatch repeats the title; each diary entry has its own link.
     <li key={movie.link} data-paper="row" className="group relative">
@@ -84,6 +94,7 @@ export function MovieActivityRows({ movies }: { movies: LetterboxdMovie[] }) {
             className="relative aspect-[2/3] w-10 shrink-0 overflow-hidden border border-border/70 shadow-sm sm:w-11"
             imageClassName="object-cover"
             initialsClassName="absolute right-1 bottom-1 font-serif text-[10px] font-semibold text-muted-foreground/70"
+            paper={index === landing ? "landing" : undefined}
             sizes="44px"
             src={movie.posterUrl}
             title={movie.title}

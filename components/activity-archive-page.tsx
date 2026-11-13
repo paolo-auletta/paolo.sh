@@ -14,6 +14,8 @@ type ActivityArchivePageProps = {
   title: string
   /** An http(s) link opens in a new tab; a path stays on the site. */
   viewAllHref: string
+  /** Laid out only to be measured: no entrance, no prefetching. */
+  still?: boolean
 }
 
 const footerLinkClassName =
@@ -61,7 +63,9 @@ export function ActivityArchivePage({
   rows,
   title,
   viewAllHref,
+  still = false,
 }: ActivityArchivePageProps) {
+  const prefetch = still ? false : undefined
   const isExternalViewAll = viewAllHref.startsWith("http")
 
   return (
@@ -80,7 +84,7 @@ export function ActivityArchivePage({
               >
                 <HomePagePositionAnchor />
               </div>
-              <PaperSheet>
+              <PaperSheet still={still}>
                 <div className="flex flex-col gap-3">
                   <h1
                     data-paper="title"
@@ -113,6 +117,7 @@ export function ActivityArchivePage({
                       <Link
                         className={`${footerLinkClassName} cursor-pointer`}
                         href="/"
+                        prefetch={prefetch}
                       >
                         Back
                       </Link>
@@ -129,6 +134,7 @@ export function ActivityArchivePage({
                         <Link
                           href={viewAllHref}
                           className={footerLinkClassName}
+                          prefetch={prefetch}
                         >
                           View all
                         </Link>
