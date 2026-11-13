@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 
-import { Album } from "@/components/album"
+import { AlbumPage } from "@/components/album/album-page"
 
 export const metadata: Metadata = {
   title: "άλμπουμ σιωπηλός (Album Silente) — Sellas",
@@ -8,6 +8,6 @@ export const metadata: Metadata = {
     "A small, mostly silent record by Sellas. Listen, download, and read the credits.",
 }
 
-export default function AlbumPage() {
-  return <Album />
+export default function Page() {
+  return <AlbumPage />
 }

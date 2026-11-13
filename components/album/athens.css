@@ -1,0 +1,794 @@
+/*
+ * The /album page: the plaster-and-blue design system, after the Wild
+ * Week Athens site. Everything is scoped under .athens so the rest of the
+ * site is untouched. Light only, on purpose: it's plaster.
+ */
+
+.athens {
+  --blue: #0755bb;
+  --blue-dark: #054496;
+  --bg: #dcdbd5;
+  --panel: #e8e8e8;
+  --line: #cbcbcb;
+  --soft: rgba(7, 85, 187, 0.32);
+  --plaster: #e1e0dc; /* the baked wall, exactly */
+  /* Marcellus first; it has no Greek, so those letters fall to Commissioner. */
+  --display: var(--font-athens-display), var(--font-athens-greek), Arial, sans-serif;
+  --ui: var(--font-athens-ui), Arial, sans-serif;
+  color-scheme: light;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--blue);
+  font-family: var(--display);
+  font-weight: 400;
+  font-variation-settings: "FLAR" 100;
+  letter-spacing: 0;
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+}
+
+.athens ::selection {
+  background: var(--blue);
+  color: #fff;
+}
+
+.athens a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.athens button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.athens .caps {
+  text-transform: uppercase;
+}
+
+.athens .ui {
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+/* A short hairline between two facts (instead of a middle dot). */
+.athens .sep {
+  display: inline-block;
+  width: 1.5em;
+  height: 1px;
+  margin: 0 0.7em;
+  vertical-align: 0.32em;
+  background: currentColor;
+  opacity: 0.45;
+}
+
+.athens .cell {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg);
+}
+
+.athens .cell-white {
+  background: #fff;
+}
+
+.athens h2.section-title {
+  font-size: 24px;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* ───────────────────────── relief ───────────────────────── */
+
+.relief {
+  position: relative;
+  overflow: hidden;
+  background: var(--plaster);
+  touch-action: pan-y;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.relief-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.relief-img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Before the script places it: stand on the floor, against the inner edge. */
+.relief[data-place^="pillar"] .relief-img {
+  top: auto;
+  bottom: 0;
+  width: auto;
+}
+
+.relief[data-place="pillar-left"] .relief-img {
+  left: auto;
+  right: 0;
+}
+
+.relief[data-place="pillar-right"] .relief-img {
+  right: auto;
+  left: 0;
+}
+
+.relief-gl {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms ease;
+}
+
+.relief.is-ready .relief-gl {
+  opacity: 1;
+}
+
+.athens .cell > .relief,
+.athens .cell > .disc-cell {
+  position: absolute;
+  inset: 0;
+}
+
+/* ───────────────────────── disc player ───────────────────────── */
+
+.disc-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.disc-stage {
+  position: relative;
+  width: min(78%, 560px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: transparent;
+  clip-path: circle(49.3%);
+  cursor: pointer;
+}
+
+.disc-stage .relief-layer {
+  animation: disc-spin 30s linear infinite;
+  animation-play-state: paused;
+}
+
+.disc-stage .relief-layer.is-spinning {
+  animation-play-state: running;
+}
+
+.disc-sector {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.disc-sector path {
+  fill: var(--blue);
+  opacity: 0.16;
+  transition: opacity 400ms ease;
+}
+
+.disc-sector.is-playing path {
+  animation: sector-breathe 2.4s ease-in-out infinite alternate;
+}
+
+@keyframes sector-breathe {
+  from {
+    opacity: 0.12;
+  }
+  to {
+    opacity: 0.24;
+  }
+}
+
+.disc-progress {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.disc-progress circle {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 0.5;
+  opacity: 0.85;
+  transition: stroke-dasharray 300ms linear;
+}
+
+/* Fills the medallion's well, right up to the plaster ring around it. */
+.disc-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 15.7%;
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff !important;
+  transform: translate(-50%, -50%);
+}
+
+.disc-play > svg {
+  position: relative;
+  width: 44%;
+  height: 44%;
+}
+
+/* On hover a Greek key grows in from the rim, then slowly turns. */
+.disc-play {
+  overflow: hidden;
+}
+
+.disc-play-key {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.3);
+  transition:
+    opacity 260ms ease,
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.disc-play-key svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  animation: disc-spin 16s linear infinite;
+  animation-play-state: paused;
+}
+
+.disc-play-key path,
+.disc-play-key circle {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.86);
+  stroke-width: 1.6;
+  stroke-linejoin: miter;
+}
+
+.disc-play:hover .disc-play-key,
+.disc-play:focus-visible .disc-play-key {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.disc-play:hover .disc-play-key svg,
+.disc-play:focus-visible .disc-play-key svg {
+  animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disc-play-key {
+    transform: none;
+  }
+
+  .disc-play-key svg {
+    animation: none;
+  }
+}
+
+.disc-caption {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  right: 52px;
+  margin: 0;
+  font-family: var(--ui);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.disc-time {
+  color: var(--soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.disc-mute {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transition:
+    opacity 200ms ease,
+    transform 180ms ease;
+}
+
+.disc-mute svg {
+  width: 20px;
+  height: 20px;
+}
+
+.disc-mute.is-muted {
+  opacity: 0.42;
+}
+
+.disc-mute:hover {
+  transform: translateY(-1px) scale(1.06);
+}
+
+@keyframes disc-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* ───────────────────────── track rows ───────────────────────── */
+
+.track-list {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.track-row button {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--panel);
+  font-size: 16px;
+  line-height: 1.1;
+  text-align: left;
+  text-transform: uppercase;
+  transition:
+    background 160ms ease,
+    color 160ms ease;
+}
+
+.track-row:not(.is-current) button:hover:not(:disabled) {
+  background: #fff;
+}
+
+.track-row.is-current button:hover {
+  filter: brightness(1.12);
+}
+
+.track-row.is-current button {
+  background: linear-gradient(
+    90deg,
+    var(--blue-dark) calc(var(--p, 0) * 100%),
+    var(--blue) calc(var(--p, 0) * 100%)
+  );
+  color: #fff;
+}
+
+.track-row.is-locked button {
+  color: var(--soft);
+  cursor: not-allowed;
+}
+
+.track-num {
+  position: relative;
+  display: inline-grid;
+}
+
+.track-num > * {
+  grid-area: 1 / 1;
+}
+
+.track-icon {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.track-icon svg {
+  width: 72%;
+  height: 72%;
+}
+
+.track-row.is-current .track-icon {
+  background: #fff;
+  color: var(--blue);
+}
+
+.track-row button:hover:not(:disabled) .track-icon,
+.track-row.is-current .track-icon {
+  opacity: 1;
+}
+
+.track-row button:hover:not(:disabled) .track-numeral,
+.track-row.is-current .track-numeral {
+  opacity: 0;
+}
+
+.track-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track-time {
+  padding-left: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ───────────────────────── facts card ───────────────────────── */
+
+.facts-shell {
+  width: min(82%, 400px);
+  padding: 24px 22px 22px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--panel);
+  box-shadow: 0 0 0 24px rgba(255, 255, 255, 0.43);
+}
+
+.facts-shell h2 {
+  font-size: 24px;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.facts-shell dl {
+  display: grid;
+  gap: 22px;
+  margin: 56px 0 0;
+}
+
+.fact-row {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 18px;
+  font-size: 15px;
+  line-height: 1.22;
+}
+
+.fact-row dd {
+  margin: 0;
+  text-align: right;
+  white-space: pre-line;
+}
+
+/* ───────────────────────── reveal ───────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .athens [data-reveal] {
+    animation: athens-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: var(--d, 0ms);
+  }
+}
+
+@keyframes athens-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disc-stage .relief-layer {
+    animation: none;
+  }
+}
+
+/* ═════════════════════════ page layout ═════════════════════════ */
+
+/*
+ * Two columns stand at the window's edges, pinned while the page scrolls
+ * between them. They are always shown whole; below 1100px there is no room
+ * for that, so they go away and the page is one column.
+ */
+.l2 {
+  --pw: clamp(44px, 18vw, 320px);
+  display: grid;
+  grid-template-columns: var(--pw) minmax(0, 1fr) var(--pw);
+  gap: 4px;
+  padding: 4px;
+}
+
+/* .athens .cell sets position: relative, so this needs the same weight. */
+.athens .l2-pillar {
+  position: sticky;
+  top: 4px;
+  height: calc(100svh - 8px);
+}
+
+.l2-main {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-width: 0;
+}
+
+.l2-hero {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: calc(100svh - 8px);
+  padding: 18px 20px 28px;
+}
+
+.l2-bar {
+  display: flex;
+  justify-content: space-between;
+}
+
+.athens .l2-hero > .disc-cell {
+  position: static;
+  width: 100%;
+  padding: 24px 0 12px;
+}
+
+.l2-hero .disc-stage {
+  width: min(58vh, 92%);
+}
+
+.l2-hero .disc-caption {
+  left: 20px;
+  bottom: 20px;
+}
+
+.l2-hero .disc-mute {
+  right: 18px;
+  bottom: 18px;
+}
+
+.l2-heading {
+  text-align: center;
+}
+
+.l2-heading p {
+  margin: 14px 0 26px;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+/* The title in two languages, stacked in one cell so swapping them never
+   moves anything: the cell is always as big as the bigger of the two. */
+.title-swap {
+  display: grid;
+  margin: 0;
+  font-size: clamp(34px, 6vw, 92px);
+  font-weight: 400;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.title-swap > button {
+  display: grid;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+}
+
+.title-swap > button > span {
+  grid-area: 1 / 1;
+  display: block;
+}
+
+.title-swap > button:focus-visible {
+  outline: 1px solid var(--blue);
+  outline-offset: 6px;
+}
+
+.title-swap .line {
+  display: block;
+  white-space: nowrap;
+}
+
+.title-swap .ch {
+  display: inline-block;
+  transition:
+    opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i) * 28ms);
+}
+
+.title-swap [aria-hidden="true"] .ch {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translateY(0.12em);
+  transition-delay: calc(var(--i) * 18ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-swap .ch {
+    transition: opacity 300ms ease;
+    filter: none !important;
+    transform: none !important;
+  }
+}
+
+.l2-record {
+  padding: 40px clamp(20px, 6vw, 96px) 48px;
+}
+
+.l2-record header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 40px;
+}
+
+.l2-record .track-row button {
+  min-height: 34px;
+  font-size: 20px;
+}
+
+.l2-record footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 28px;
+}
+
+.l2-record footer button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.l2-record footer svg {
+  width: 14px;
+  height: 14px;
+}
+
+.l2-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.l2-pair > .cell {
+  aspect-ratio: 1;
+}
+
+.l2-temple {
+  aspect-ratio: 2600 / 1120;
+}
+
+@media (max-width: 1099px) {
+  .l2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .athens .l2-pillar {
+    display: none;
+  }
+
+  .l2-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 809px) {
+  .l2 {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .l2-main {
+    gap: 3px;
+  }
+
+  .l2-hero {
+    min-height: auto;
+    padding: 12px 12px 56px;
+  }
+
+  .l2-hero .disc-stage {
+    width: 100%;
+  }
+
+  .l2-hero .disc-caption {
+    left: 12px;
+    bottom: 16px;
+    font-size: 11px;
+  }
+
+  .l2-hero .disc-mute {
+    right: 10px;
+    bottom: 12px;
+  }
+
+  .l2-heading p {
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+
+  .l2-record {
+    padding: 22px 12px 24px;
+  }
+
+  .l2-record header {
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+  }
+
+  .l2-record .track-row button {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    min-height: 32px;
+    padding: 2px 5px;
+    font-size: 15px;
+  }
+
+  .l2-pair .facts-shell {
+    width: 86%;
+    padding: 18px 14px 16px;
+    box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.43);
+  }
+
+  .l2-pair .facts-shell dl {
+    margin-top: 30px;
+    gap: 14px;
+  }
+
+  .l2-pair .fact-row {
+    grid-template-columns: 22px 1fr;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  /* On a phone, crop the sky either side so the facade spans the width:
+     the cornice and steps just inside the edges, all six columns whole. */
+  .l2-temple {
+    aspect-ratio: 1.68;
+  }
+}
