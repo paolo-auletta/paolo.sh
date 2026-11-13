@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useLayoutEffect, useRef } from "react"
 
+import { dropCover, pickUpCover } from "@/components/motion/carried-cover"
 import {
   animateFill,
   ARRIVE_MS,
@@ -16,6 +17,10 @@ import {
  * then does the next page come in on it. Coming back, the homepage starts
  * fully papered and the paper draws back in to the copy, letting the scene
  * through again.
+ *
+ * Leaving by the album or the film in the homepage copy, with its preview
+ * card open, the card is carried along (components/motion/carried-cover.ts)
+ * and laid down in its place on the next page.
  *
  * The paper's fill itself lives in components/paper-fill.ts; this file owns
  * the link clicks that start it.
@@ -89,6 +94,7 @@ export function PageTransitions() {
       if (fromHome) {
         root.dataset.homeLeaving = ""
         animateFill(1, LEAVE_MS)
+        pickUpCover(url.pathname)
       } else {
         root.dataset.pageLeaving = ""
       }
@@ -101,6 +107,7 @@ export function PageTransitions() {
         if (!busy.current) return
         busy.current = false
         clearLeaving()
+        dropCover()
         if (fromHome) animateFill(0, ARRIVE_MS)
       }, 4000)
     }

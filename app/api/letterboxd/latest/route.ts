@@ -12,6 +12,7 @@ export async function GET() {
 
   return NextResponse.json({
     posterUrl: movie?.posterUrl,
+    row: movie?.row,
     title: movie?.title ?? FALLBACK_MOVIE_TITLE,
   })
 }

@@ -3,16 +3,20 @@ import { Artwork } from "@/components/artwork"
 import { AlbumCaption, SongSummary } from "@/components/music/recap-items"
 import { type MusicAlbum, type MusicSong } from "@/lib/music/types"
 
-/** The month's top albums, pinned on /music. */
+/**
+ * The month's top albums, pinned on /music. The first is the album the
+ * homepage names: its cover is where the homepage's preview is carried to
+ * (components/motion/carried-cover.ts).
+ */
 export function PinnedAlbumCards({ albums }: { albums: MusicAlbum[] }) {
-  return albums.map((album) => (
+  return albums.map((album, index) => (
     <div key={album.title} data-paper="card" className="min-w-0">
       <Artwork
         alt={`${album.title} poster`}
         className="relative aspect-square overflow-hidden border border-border/70 shadow-sm"
         imageClassName="object-cover"
         initialsClassName="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70"
-        paper="cover"
+        paper={index === 0 ? "cover landing" : "cover"}
         sizes="(min-width: 640px) 135px, 50vw"
         src={album.artworkUrl}
         title={album.title}

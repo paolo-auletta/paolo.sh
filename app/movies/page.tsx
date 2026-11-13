@@ -5,6 +5,7 @@ import {
 } from "@/components/movies/movie-activity"
 import { getCurrentMonthLabel } from "@/lib/date"
 import {
+  getLatestLikedRatedLetterboxdMovie,
   getRecentLetterboxdMovies,
   LETTERBOXD_PROFILE_URL,
 } from "@/lib/letterboxd"
@@ -13,14 +14,18 @@ import { fallbackMovieActivity, pinnedFilms } from "@/lib/movies"
 
 export const metadata = pageMetadata({
   title: "Movies",
-  description: "The films I have been watching lately, from my Letterboxd diary.",
+  description:
+    "The films I have been watching lately, from my Letterboxd diary.",
   path: "/movies",
 })
 
 export const revalidate = 3600
 
 export default async function MoviesPage() {
-  const movies = await getRecentLetterboxdMovies(5)
+  const [movies, latest] = await Promise.all([
+    getRecentLetterboxdMovies(),
+    getLatestLikedRatedLetterboxdMovie(),
+  ])
 
   return (
     <ActivityArchivePage
@@ -28,9 +33,11 @@ export default async function MoviesPage() {
       monthLabel={getCurrentMonthLabel()}
       pinned={<PinnedFilmCards films={pinnedFilms} />}
       rows={
-        <MovieActivityRows
-          movies={movies.length > 0 ? movies : fallbackMovieActivity}
-        />
+        movies.length > 0 ? (
+          <MovieActivityRows movies={movies} landing={latest?.row} />
+        ) : (
+          <MovieActivityRows movies={fallbackMovieActivity} />
+        )
       }
       viewAllHref={LETTERBOXD_PROFILE_URL}
     />
