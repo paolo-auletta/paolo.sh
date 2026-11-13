@@ -1074,6 +1074,23 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
         // more his steel takes the color of the sky around him.
         const air = skyAt(giant.y)
         const haze = 0.06 + 0.42 * Math.pow(giant.distance, 1.3)
+        // He is solid: nothing behind him shows between his glyphs. Every
+        // cell he covers is first filled with the night around him, which
+        // hides the stars and clouds he passes in front of and leaves the
+        // glyphs themselves as they were.
+        ctx.fillStyle = `rgb(${air[0]},${air[1]},${air[2]})`
+        ctx.beginPath()
+        for (const cells of buckets.values()) {
+          for (let i = 0; i < cells.length; i += 3) {
+            ctx.rect(
+              cells[i] * cellWidth - 0.25,
+              cells[i + 1] * cellHeight - 0.25,
+              cellWidth + 0.5,
+              cellHeight + 0.5
+            )
+          }
+        }
+        ctx.fill()
         for (const [color, cells] of buckets) {
           if (!cells.length) continue
           const veil = color === GIANT_EYE ? haze * 0.3 : haze
@@ -1195,6 +1212,20 @@ export function GiantNight({ playIntro, onReveal }: GiantNightProps) {
             }
           )
         }
+      }
+
+      // As the copy comes in, the landing's smoke parts around it, as the
+      // clouds do: the blast still goes up all around the copy, but the
+      // words never sit on top of it.
+      const part = 0.88 * smoothstep(GIANT.impact + 0.1, GIANT.reveal + 0.35, t)
+      if (clouds && part > 0 && since > 0 && since < 5) {
+        shapeCloudMask(ratio)
+        ctx.save()
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.globalCompositeOperation = "destination-out"
+        ctx.globalAlpha = part
+        ctx.drawImage(cloudMask, 0, 0)
+        ctx.restore()
       }
 
       // Everything so far is behind the hills.

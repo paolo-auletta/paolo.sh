@@ -389,17 +389,26 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       context.textAlign = "center"
       context.textBaseline = "middle"
 
+      // The glyph grid travels with the plane, so it glides across the sky
+      // instead of crawling through a grid pinned to the screen. Rasterize
+      // around an anchor on a whole cell, then shift into place.
+      const reach = 1.75 * frame.scale
+      const anchorX = Math.ceil(reach / cellWidth + 1) * cellWidth
+      const anchorY = Math.ceil(reach / cellHeight + 1) * cellHeight
+      const shiftX = frame.x - anchorX
+      const shiftY = frame.y - anchorY
+
       for (const cells of buckets.values()) cells.length = 0
       rasterizePlane(
         frame.pose,
         {
-          originX: frame.x,
-          originY: frame.y,
+          originX: anchorX,
+          originY: anchorY,
           scale: frame.scale,
           cellWidth,
           cellHeight,
-          viewWidth: layout.width,
-          viewHeight: layout.height,
+          viewWidth: layout.width - shiftX,
+          viewHeight: layout.height - shiftY,
         },
         (col, row, glyph, color) => {
           let cells = buckets.get(color)
@@ -422,8 +431,8 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
         for (let i = 0; i < cells.length; i += 3) {
           context.fillText(
             String.fromCharCode(cells[i + 2]),
-            (cells[i] + 0.5) * cellWidth,
-            (cells[i + 1] + 0.5) * cellHeight
+            shiftX + (cells[i] + 0.5) * cellWidth,
+            shiftY + (cells[i + 1] + 0.5) * cellHeight
           )
         }
       }

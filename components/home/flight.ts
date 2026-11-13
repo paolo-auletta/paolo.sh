@@ -4,27 +4,27 @@ import type { PlanePose } from "@/components/home/ascii-plane"
  * The homepage intro, on one clock (seconds).
  *
  *   0.0  sky only, high above the meadow
- *   0.3  the plane comes down from high above the top left in one smooth
- *        arc while the camera starts to descend: slow at first, faster and
- *        faster, rolling over once on the way down
- *   1.4  at the bottom of the arc it is level, and banks away into the
- *        distance on the right
+ *   0.25 the plane glides in from the high sky on the left while the camera
+ *        starts to descend with it, unhurried, and rolls over once, slowly
+ *   ~2.6 it reaches the bottom of its swoop, closest to us and fastest,
+ *        levels out, and banks up to the right into the distance
  *   3.9  the paper washes in around the text
  *   4.3  the copy fades in
+ *   4.45 the plane is gone (sooner on phones)
  *   4.9  the camera lands on the meadow
- *   4.9+ the plane comes back from the top right and wanders the sky,
+ *   5.1+ the plane comes back from the top right and wanders the sky,
  *        drifting between the open patches around the edges
  */
 export const INTRO = {
-  planeIn: 0.3,
-  diveEnd: 1.4,
-  planeOut: 4.1,
+  planeIn: 0.25,
+  /** The latest the intro plane is gone; on phones it leaves sooner. */
+  planeOut: 4.75,
   cameraStart: 0.6,
   cameraEnd: 4.9,
   paperStart: 3.9,
   paperEnd: 5.4,
   reveal: 4.3,
-  wanderStart: 4.9,
+  wanderStart: 5.1,
   /** A time well after everything has settled, for skipping the intro. */
   settled: 40,
 } as const
@@ -73,8 +73,6 @@ export type FlightFrame = {
   /** Which phase is flying; the renderer picks a glyph size per phase. */
   phase: "intro" | "wander"
 }
-
-type Point = { x: number; y: number; z: number }
 
 const TILT = 0.24
 // Depth units → pixels, when turning velocity into a heading.
@@ -136,118 +134,253 @@ export function paperProgress(t: number) {
 }
 
 /**
- * The intro flight through 3D: x and y are viewport fractions, z is depth.
- *
- * The way down: roughly an arc, steep where it starts high above the top
- * left and level at its bottom, coming closer as it goes. Hand-placed rather
- * than a formula, so it reads as flown. The first and last points only set
- * the directions it starts and ends in.
+ * The intro flight, as keys on screen: where the plane is (viewport
+ * fractions) and how near it is (its size; 1 is the bottom of the swoop).
+ * The keys are lifted into a real 3D space seen through a long lens and the
+ * plane flies one smooth curve through them. Its pace comes from the flight
+ * itself rather than from the keys: it gathers speed as it comes down,
+ * carries it through the pass, and opens the throttle to climb away, while
+ * the lens shrinks and slows it on screen as it leaves. So its speed and
+ * heading never jump.
  */
-const DESCENT: [number, number, number][] = [
-  [-0.22, -0.48, 2.2],
-  [-0.13, -0.3, 2.1],
-  [-0.04, -0.11, 1.92],
-  [0.06, 0.1, 1.64],
-  [0.17, 0.29, 1.3],
-  [0.27, 0.42, 1.1],
-  [0.37, 0.46, 1.0],
-  [0.454, 0.42, 1.1],
-]
-const ARC_BOTTOM = DESCENT[DESCENT.length - 2]
+type Key = readonly [x: number, y: number, near: number]
+
 /**
- * Out of the arc and away: level, then banking up to the right into the
- * distance. The first point only sets the direction it comes out of the arc
- * in (level, at the arc's speed).
+ * Wide screens: out of the high sky on the left, one long glide down and
+ * toward us, a level pass at its closest, then banking up to the right
+ * into the distance.
  */
-const EXIT: [number, number, number][] = [
-  [-0.36, 0.4, 1.3],
-  ARC_BOTTOM,
-  [0.6, 0.4, 1.3],
-  [0.76, 0.27, 2.0],
-  [0.94, 0.17, 2.9],
-  [1.34, 0.1, 4.2],
+const WIDE_PATH: Key[] = [
+  [-0.06, 0.04, 0.5],
+  [0.07, 0.12, 0.6],
+  [0.19, 0.27, 0.8],
+  [0.31, 0.4, 0.97],
+  [0.44, 0.46, 1.04],
+  [0.6, 0.42, 0.92],
+  [0.76, 0.29, 0.72],
+  [0.93, 0.18, 0.56],
+  [1.12, 0.11, 0.46],
 ]
 
-const progress = (t: number, from: number, to: number) =>
-  Math.min(1, Math.max(0, (t - from) / (to - from)))
+/**
+ * Phones, upright: the same flight drawn for a narrow frame, gliding across
+ * the top of the sky rather than dropping straight down it, and leaving
+ * more by going off into the distance than across.
+ */
+const COMPACT_PATH: Key[] = [
+  [-0.1, 0.1, 0.5],
+  [0.07, 0.14, 0.6],
+  [0.25, 0.2, 0.78],
+  [0.44, 0.25, 0.95],
+  [0.6, 0.27, 1.0],
+  [0.75, 0.262, 0.93],
+  [0.87, 0.238, 0.75],
+  [0.96, 0.21, 0.6],
+  [1.04, 0.185, 0.49],
+  [1.13, 0.165, 0.41],
+]
 
-function introPoint(t: number, layout: Layout): Point {
+/** How far off it is at size 1, in model units: a long, gentle lens. */
+const LENS = 9
+/**
+ * Its speed through the air: v² = SPEED_FLOOR + the share of the drop it
+ * has fallen, so it is slowest at the top and fastest at the bottom.
+ */
+const SPEED_FLOOR = 0.55
+/**
+ * How long a wide screen's flight takes, and its length as the pace is
+ * measured (screen moves over the plane's size).
+ */
+const FLIGHT_SECONDS = 4.2
+const FLIGHT_LENGTH = 17
+/** How much growing or shrinking on screen counts as moving, in plane sizes. */
+const GROWTH = 6
+/** How much it speeds up again climbing away (throttle open). */
+const THROTTLE = 1.1
+/**
+ * How much its depth counts when turning its velocity into a heading. Below
+ * 1 it stays closer to side-on than it really would, where it reads best.
+ */
+const HEADING_DEPTH = 0.45
+/** How hard it banks into a turn. */
+const BANK = 0.55
+/** The roll on the way down: where it starts and ends (share of the way). */
+const ROLL = [0.11, 0.32] as const
+
+type Track = {
+  /** Intro-clock time of each sample. */
+  time: Float64Array
+  x: Float64Array
+  y: Float64Array
+  z: Float64Array
+  /** Screen pixels per model unit at depth z = 1. */
+  focal: number
+  cx: number
+  cy: number
+  /** When the roll starts and ends. */
+  roll: [number, number]
+}
+
+const SAMPLES = 1500
+const tracks = new WeakMap<Layout, Track>()
+
+/** The intro flight for a layout, sampled densely in time. */
+function trackFor(layout: Layout): Track {
+  const cached = tracks.get(layout)
+  if (cached) return cached
   const { width, height } = layout
-  if (t < INTRO.diveEnd) {
-    // Easing into it, then faster and faster all the way down.
-    const time = progress(t, INTRO.planeIn, INTRO.diveEnd)
-    const [x, y, z] = catmullRom(DESCENT, time * (0.3 + 0.7 * time), true)
-    // A little give in the glide: it lifts and settles, and swings a touch
-    // nearer and farther, gone again by the bottom of the arc.
-    const give = Math.sin(time * Math.PI)
-    return {
-      x: x * width,
-      y: (y + 0.012 * give * Math.sin(time * 9.5 + 0.6)) * height,
-      z: z + 0.07 * give * Math.sin(time * 6.2 + 1.1),
+  const keys = width < 640 ? COMPACT_PATH : WIDE_PATH
+  // The vanishing point, a little above the middle: it leaves toward it.
+  const cx = width * 0.5
+  const cy = height * 0.42
+  const focal = (layout.planeScale / 1.7) * LENS
+  const points = keys.map(([sx, sy, near]) => {
+    const z = LENS / near
+    return [
+      ((sx * width - cx) * z) / focal,
+      ((cy - sy * height) * z) / focal,
+      z,
+    ]
+  })
+  // Carry on straight past either end.
+  const n = points.length
+  const extend = (a: number[], b: number[]) => a.map((v, k) => 2 * v - b[k])
+  const all = [
+    extend(points[0], points[1]),
+    ...points,
+    extend(points[n - 1], points[n - 2]),
+  ]
+
+  const x = new Float64Array(SAMPLES)
+  const y = new Float64Array(SAMPLES)
+  const z = new Float64Array(SAMPLES)
+  const segments = n - 1
+  for (let i = 0; i < SAMPLES; i++) {
+    const f = Math.min(segments - 1e-9, (i / (SAMPLES - 1)) * segments)
+    const k = Math.floor(f)
+    const p = centripetal(all[k], all[k + 1], all[k + 2], all[k + 3], f - k)
+    x[i] = p[0]
+    y[i] = p[1]
+    z[i] = p[2]
+  }
+
+  // Fly it. Through a lens a plane at a steady airspeed crosses the screen
+  // in proportion to its size there, so each step is measured on screen
+  // (with how much it grows or shrinks) against its size, then sped up by
+  // how far it has fallen and by the throttle on the way out.
+  const screenX = (i: number) => cx + (x[i] * focal) / z[i]
+  const screenY = (i: number) => cy - (y[i] * focal) / z[i]
+  let top = Infinity
+  let bottom = 0
+  for (let i = 0; i < SAMPLES; i++) {
+    top = Math.min(top, screenY(i))
+    if (screenY(i) > screenY(bottom)) bottom = i
+  }
+  const drop = screenY(bottom) - top || 1
+  const time = new Float64Array(SAMPLES)
+  for (let i = 1; i < SAMPLES; i++) {
+    const size = focal / z[i]
+    const grow = (z[i - 1] / z[i] - 1) * GROWTH * size
+    const step = Math.hypot(
+      screenX(i) - screenX(i - 1),
+      screenY(i) - screenY(i - 1),
+      grow
+    )
+    const fallen = i <= bottom ? (screenY(i) - top) / drop : 1
+    const throttle = 1 + THROTTLE * smoothstep(bottom, SAMPLES - 1, i)
+    time[i] =
+      time[i - 1] + step / (size * Math.sqrt(SPEED_FLOOR + fallen) * throttle)
+  }
+  // A longer flight takes longer, but not in proportion: a phone's shorter
+  // one is a little brisker, so it never drags.
+  const length = time[SAMPLES - 1]
+  const seconds = Math.min(
+    INTRO.planeOut - INTRO.planeIn,
+    FLIGHT_SECONDS * Math.sqrt(length / FLIGHT_LENGTH)
+  )
+  const span = seconds / length
+  for (let i = 0; i < SAMPLES; i++) time[i] = INTRO.planeIn + time[i] * span
+
+  const roll: [number, number] = [
+    time[Math.round(ROLL[0] * (SAMPLES - 1))],
+    time[Math.round(ROLL[1] * (SAMPLES - 1))],
+  ]
+  const track = { time, x, y, z, focal, cx, cy, roll }
+  tracks.set(layout, track)
+  return track
+}
+
+/** Centripetal Catmull-Rom between b and c: no loops, no overshoot. */
+function centripetal(
+  a: number[],
+  b: number[],
+  c: number[],
+  d: number[],
+  u: number
+) {
+  const knot = (p: number[], q: number[]) =>
+    Math.sqrt(Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2])) || 1e-4
+  const t1 = knot(a, b)
+  const t2 = t1 + knot(b, c)
+  const t3 = t2 + knot(c, d)
+  const t = t1 + (t2 - t1) * u
+  return [0, 1, 2].map((k) => {
+    const a1 = ((t1 - t) * a[k] + t * b[k]) / t1
+    const a2 = ((t2 - t) * b[k] + (t - t1) * c[k]) / (t2 - t1)
+    const a3 = ((t3 - t) * c[k] + (t - t2) * d[k]) / (t3 - t2)
+    const b1 = ((t2 - t) * a1 + t * a2) / t2
+    const b2 = ((t3 - t) * a2 + (t - t1) * a3) / (t3 - t1)
+    return ((t2 - t) * b1 + (t - t1) * b2) / (t2 - t1)
+  })
+}
+
+/** Where the plane is in the world at a time on the intro clock. */
+function trackAt(track: Track, t: number) {
+  const { time } = track
+  const last = SAMPLES - 1
+  // Past either end it carries on in a straight line.
+  const edge = t < time[0] ? 0 : t > time[last] ? last - 1 : -1
+  let lo = edge
+  if (lo < 0) {
+    lo = 0
+    let hi = last
+    while (hi - lo > 1) {
+      const mid = (lo + hi) >> 1
+      if (time[mid] <= t) lo = mid
+      else hi = mid
     }
   }
-  const u = progress(t, INTRO.diveEnd, INTRO.planeOut)
-  const [x, y, z] = catmullRom(EXIT, u)
-  return { x: x * width, y: y * height, z }
+  const hi = lo + 1
+  const f = (t - time[lo]) / (time[hi] - time[lo] || 1)
+  const lerp = (a: Float64Array) => a[lo] + (a[hi] - a[lo]) * f
+  return [lerp(track.x), lerp(track.y), lerp(track.z)]
 }
 
 /**
- * Catmull-Rom through all but the first point, which only sets the start's
- * direction (and, with `tail`, the last, which only sets the end's).
+ * Its heading as it looks: yaw (0 = to the right, +π/2 = toward us) and
+ * pitch, from how it moves across the screen and how fast it grows there,
+ * the same way its pace is measured.
  */
-function catmullRom(
-  points: [number, number, number][],
-  u: number,
-  tail = false
-) {
-  const segments = points.length - (tail ? 3 : 2)
-  const f = Math.min(segments - 1e-6, Math.max(0, u * segments))
-  const i = Math.floor(f) + 1
-  const t = f - (i - 1)
-  const p0 = points[i - 1]
-  const p1 = points[i]
-  const p2 = points[i + 1]
-  const p3 = points[Math.min(points.length - 1, i + 2)]
-  const t2 = t * t
-  const t3 = t2 * t
-  return [0, 1, 2].map(
-    (k) =>
-      0.5 *
-      (2 * p1[k] +
-        (-p0[k] + p2[k]) * t +
-        (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2 +
-        (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)
-  ) as [number, number, number]
-}
-
-/**
- * The aileron roll, a full turn about its own length, on the way down: done
- * before the bottom of the arc, so it comes out of it level.
- */
-function introFlourish(t: number) {
-  const span = INTRO.diveEnd - INTRO.planeIn
-  return (
-    smoothstep(INTRO.planeIn + span * 0.32, INTRO.planeIn + span * 0.9, t) *
-    Math.PI *
-    2
-  )
-}
-
-function pointAt(t: number, layout: Layout) {
-  return introPoint(t, layout)
-}
-
-function headingAt(t: number, layout: Layout) {
-  const h = 1 / 120
-  const a = pointAt(t - h, layout)
-  const b = pointAt(t + h, layout)
-  const vx = b.x - a.x
-  const vy = b.y - a.y
-  const vz = (b.z - a.z) * layout.width * DEPTH_TO_PX
+function headingOn(track: Track, t: number) {
+  const h = 1 / 60
+  const [ax, ay, az] = trackAt(track, t - h)
+  const [bx, by, bz] = trackAt(track, t + h)
+  const { focal } = track
+  const vx = (bx / bz - ax / az) * focal
+  const vy = (by / bz - ay / az) * focal
+  const vz = (bz / az - 1) * GROWTH * HEADING_DEPTH * (focal / bz)
   return {
     yaw: Math.atan2(-vz, vx),
-    pitch: Math.atan2(-vy, Math.hypot(vx, vz)),
+    pitch: Math.atan2(vy, Math.hypot(vx, vz)),
   }
+}
+
+/**
+ * One slow aileron roll on the way down, eased in and out, so it comes out
+ * of it level well before the bottom of the swoop.
+ */
+function introRoll(track: Track, t: number) {
+  return smoothstep(track.roll[0], track.roll[1], t) * Math.PI * 2
 }
 
 function unwrap(a: number, reference: number) {
@@ -263,29 +396,31 @@ export function flightAt(
   wanderer: Wanderer
 ): FlightFrame | null {
   if (t >= INTRO.wanderStart) return wanderer.frameAt(t)
-  if (t < INTRO.planeIn - 0.05 || t > INTRO.planeOut + 0.1) return null
+  if (t < INTRO.planeIn - 0.05) return null
 
-  const p = pointAt(t, layout)
-  const frame = {
-    x: p.x,
-    y: p.y,
-    scale: layout.planeScale / (1 + p.z * PERSPECTIVE),
-    phase: "intro" as const,
-  }
+  const track = trackFor(layout)
+  if (t > track.time[SAMPLES - 1] + 0.05) return null
+  const [x, y, z] = trackAt(track, t)
 
-  const now = headingAt(t, layout)
-  const later = headingAt(t + 0.12, layout)
-  const turnRate = unwrap(later.yaw, now.yaw) - now.yaw
-  // Bank into turns, plus the roll on the way out.
-  const roll =
-    Math.max(-0.9, Math.min(0.9, (turnRate / 0.12) * 0.28)) + introFlourish(t)
+  const now = headingOn(track, t)
+  // Bank into turns, rolling in and out with them.
+  const dt = 0.15
+  const before = headingOn(track, t - dt)
+  const after = headingOn(track, t + dt)
+  const turn = (unwrap(after.yaw, before.yaw) - before.yaw) / (2 * dt)
+  const bank = Math.max(-0.8, Math.min(0.8, turn * BANK))
+  // A breath of air under the wings: they rock a touch as it glides.
+  const rock = 0.05 * Math.sin(t * 2.6 + 0.4)
 
   return {
-    ...frame,
+    x: track.cx + (x * track.focal) / z,
+    y: track.cy - (y * track.focal) / z,
+    scale: track.focal / z,
+    phase: "intro",
     pose: {
       yaw: now.yaw,
-      pitch: now.pitch * (t < INTRO.diveEnd ? 0.85 : 0.6),
-      roll,
+      pitch: now.pitch * 0.8,
+      roll: bank + rock + introRoll(track, t),
       tilt: TILT,
       prop: t * 19,
     },
