@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, type CSSProperties, type SVGProps } from "react"
+import { useEffect, useRef, useState, type CSSProperties, type SVGProps } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -54,6 +54,50 @@ export const DownloadGlyph = (p: IconProps) => (
 
 /** A short hairline between two facts, in place of a middle dot. */
 export const Sep = () => <span className="sep" aria-hidden />
+
+/* ───────────────────────── meander rule ───────────────────────── */
+
+/** One Greek key on a 10×8 grid, entering bottom left, leaving bottom right. */
+const KEY: [number, number][] = [
+  [0, 8], [0, 0], [8, 0], [8, 6], [4, 6], [4, 4], [6, 4], [6, 2], [2, 2], [2, 8], [10, 8],
+]
+
+/**
+ * A running Greek key as a rule between a heading and what it heads. It fits
+ * as many whole keys as the width allows, centred, and draws itself in when
+ * its section is revealed (see .meander-rule in athens.css).
+ */
+export function MeanderRule({ unit = 1.5, className }: { unit?: number; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(0)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry!.contentRect.width)))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const h = unit * 8 + 2
+  const keys = Math.max(0, Math.floor((width - 2) / (unit * 10)))
+  const x0 = (width - keys * unit * 10) / 2
+  const d = keys
+    ? "M" +
+      Array.from({ length: keys }, (_, k) =>
+        KEY.slice(k ? 1 : 0).map(([x, y]) => `${(x0 + (k * 10 + x) * unit).toFixed(2)} ${(1 + y * unit).toFixed(2)}`)
+      )
+        .flat()
+        .join("L")
+    : ""
+  return (
+    <div ref={ref} className={cn("meander-rule", className)} style={{ height: h }} aria-hidden>
+      {keys > 0 && (
+        <svg width={width} height={h} viewBox={`0 0 ${width} ${h}`}>
+          <path d={d} pathLength={1} />
+        </svg>
+      )}
+    </div>
+  )
+}
 
 /* ───────────────────────── disc player ───────────────────────── */
 
@@ -248,10 +292,13 @@ function TitleLines({ lines, lang, hidden }: { lines: string[]; lang: string; hi
 export function TrackRow({
   track,
   player,
+  index = 0,
   className,
 }: {
   track: Track
   player: AlbumPlayer
+  /** Its place in the list, for the staggered reveal. */
+  index?: number
   className?: string
 }) {
   const isCurrent = player.current?.n === track.n
@@ -259,7 +306,7 @@ export function TrackRow({
   const pct = isCurrent && player.duration > 0 ? Math.min(1, player.progress / player.duration) : 0
   return (
     <li
-      style={{ "--p": pct } as CSSProperties}
+      style={{ "--p": pct, "--i": index } as CSSProperties}
       className={cn(
         "track-row",
         isCurrent && "is-current",

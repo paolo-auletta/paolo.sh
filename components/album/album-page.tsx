@@ -6,18 +6,57 @@
  * page scrolls between them. The medallion player is the hero, big enough to
  * play by its sectors (I–VI). Then the record as a list, the cover and the
  * facts side by side, and a temple front to close.
+ *
+ * Motion, kept to four movements:
+ * - a procession on arrival: the columns rise, the medallion is struck, the
+ *   Greek title is chiselled letter by letter, the small print comes last;
+ * - Greek key rules that draw themselves under the section titles;
+ * - lists that rise line by line, like an inscription being read;
+ * - reliefs that are unveiled.
+ * The last three wait until their section scrolls into view.
  */
 
+import { useEffect, useRef, type CSSProperties } from "react"
+
 import { ALBUM, TOTAL_SECONDS, TRACKS, downloadAll } from "./data"
-import { DiscPlayer, DownloadGlyph, Sep, TitleSwap, TrackRow } from "./parts"
+import { DiscPlayer, DownloadGlyph, MeanderRule, Sep, TitleSwap, TrackRow } from "./parts"
 import { ReliefCanvas } from "./relief-canvas"
 import { useAlbumPlayer } from "./use-album-player"
 
+/**
+ * Marks each [data-reveal] section with .is-revealed as it scrolls into view.
+ * Sections only start hidden once this runs (.motion-ready on the page), so
+ * without JS, or with reduced motion, everything simply shows.
+ */
+function useReveal() {
+  const ref = useRef<HTMLElement>(null)
+  useEffect(() => {
+    const page = ref.current
+    if (!page || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    page.classList.add("motion-ready")
+    const els = Array.from(page.querySelectorAll<HTMLElement>("[data-reveal]"))
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue
+          e.target.classList.add("is-revealed")
+          io.unobserve(e.target)
+        }
+      },
+      { rootMargin: "0px 0px -12% 0px", threshold: 0.15 }
+    )
+    els.forEach((el) => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+  return ref
+}
+
 export function AlbumPage() {
   const player = useAlbumPlayer()
+  const page = useReveal()
 
   return (
-    <main className="l2">
+    <main ref={page} className="l2">
       <aside className="cell l2-pillar">
         <ReliefCanvas name="column-l" place="pillar-left" alt="Plaster Ionic column under the sun" />
       </aside>
@@ -29,14 +68,14 @@ export function AlbumPage() {
             <span>{ALBUM.yearRoman}</span>
           </div>
           <DiscPlayer player={player} />
-          <div className="l2-heading" data-reveal>
+          <div className="l2-heading">
             <TitleSwap />
             <p>{ALBUM.artists}</p>
           </div>
         </section>
 
-        <section className="cell l2-record">
-          <header>
+        <section className="cell l2-record" data-reveal>
+          <header className="rise">
             <h2 className="section-title">The record</h2>
             <span className="ui">
               {ALBUM.genre}
@@ -44,12 +83,13 @@ export function AlbumPage() {
               {Math.round(TOTAL_SECONDS / 60)} min
             </span>
           </header>
-          <ol className="track-list" data-reveal>
-            {TRACKS.map((t) => (
-              <TrackRow key={t.n} track={t} player={player} />
+          <MeanderRule />
+          <ol className="track-list">
+            {TRACKS.map((t, i) => (
+              <TrackRow key={t.n} track={t} player={player} index={i + 1} className="rise" />
             ))}
           </ol>
-          <footer className="ui">
+          <footer className="ui rise" style={{ "--i": TRACKS.length + 2 } as CSSProperties}>
             <button type="button" onClick={downloadAll}>
               <DownloadGlyph /> Download all
             </button>
@@ -57,23 +97,24 @@ export function AlbumPage() {
         </section>
 
         <div className="l2-pair">
-          <section className="cell">
+          <section className="cell unveil" data-reveal>
             <ReliefCanvas name="cover" brush={0.16} alt={`${ALBUM.titleLatin} cover, cast in plaster`} />
           </section>
-          <section className="cell" style={{ display: "grid", placeItems: "center" }}>
+          <section className="cell" style={{ display: "grid", placeItems: "center" }} data-reveal>
             <div className="facts-shell">
-              <h2>The facts</h2>
+              <h2 className="rise">The facts</h2>
+              <MeanderRule unit={1.2} />
               <dl>
-                <Fact label="W." value={ALBUM.people.replace(" and ", "\nand ")} />
-                <Fact label="Y." value={`${ALBUM.year}\n${ALBUM.yearRoman}`} />
-                <Fact label="G." value={ALBUM.genre} />
-                <Fact label="R." value={ALBUM.recorded.replace(" · ", "\n")} />
+                <Fact i={1} label="W." value={ALBUM.people.replace(" and ", "\nand ")} />
+                <Fact i={2} label="Y." value={`${ALBUM.year}\n${ALBUM.yearRoman}`} />
+                <Fact i={3} label="G." value={ALBUM.genre} />
+                <Fact i={4} label="R." value={ALBUM.recorded.replace(" · ", "\n")} />
               </dl>
             </div>
           </section>
         </div>
 
-        <footer className="cell l2-temple">
+        <footer className="cell l2-temple unveil" data-reveal>
           <ReliefCanvas name="temple" brush={0.2} alt="A temple front with six columns, one per track" />
         </footer>
       </div>
@@ -85,9 +126,9 @@ export function AlbumPage() {
   )
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
+function Fact({ i, label, value }: { i: number; label: string; value: string }) {
   return (
-    <div className="fact-row">
+    <div className="fact-row rise" style={{ "--i": i } as CSSProperties}>
       <dt>{label}</dt>
       <dd>{value}</dd>
     </div>

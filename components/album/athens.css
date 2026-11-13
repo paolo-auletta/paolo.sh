@@ -194,19 +194,6 @@
   transition: opacity 400ms ease;
 }
 
-.disc-sector.is-playing path {
-  animation: sector-breathe 2.4s ease-in-out infinite alternate;
-}
-
-@keyframes sector-breathe {
-  from {
-    opacity: 0.12;
-  }
-  to {
-    opacity: 0.24;
-  }
-}
-
 .disc-progress {
   position: absolute;
   inset: 0;
@@ -477,10 +464,14 @@
   text-transform: uppercase;
 }
 
+.facts-shell .meander-rule {
+  margin: 24px 0 32px;
+}
+
 .facts-shell dl {
   display: grid;
   gap: 22px;
-  margin: 56px 0 0;
+  margin: 0;
 }
 
 .fact-row {
@@ -497,19 +488,139 @@
   white-space: pre-line;
 }
 
-/* ───────────────────────── reveal ───────────────────────── */
+/* ───────────────────────── meander rule ───────────────────────── */
+
+.meander-rule {
+  width: 100%;
+  color: var(--blue);
+}
+
+.meander-rule svg {
+  display: block;
+  overflow: visible;
+}
+
+.meander-rule path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linejoin: miter;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+  opacity: 0.5;
+}
+
+/* ───────────────────────── motion ─────────────────────────
+ *
+ * Four movements, all Greek, all on one easing:
+ * 1. On arrival, a procession: the columns are raised from the floor, the
+ *    medallion is struck (it settles out of a turn, like a coin), the Greek
+ *    title is chiselled out letter by letter, and the small print comes last.
+ * 2. Greek key rules draw themselves under the section titles.
+ * 3. Lists rise line by line, like an inscription being read.
+ * 4. Reliefs are unveiled.
+ * 2–4 wait for their [data-reveal] section to scroll into view
+ * (useReveal in album-page.tsx). With reduced motion, none of it runs.
+ */
 
 @media (prefers-reduced-motion: no-preference) {
-  .athens [data-reveal] {
-    animation: athens-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
-    animation-delay: var(--d, 0ms);
+  .athens {
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* 1. Procession */
+  .l2-pillar .relief-gl {
+    transition: opacity 1000ms ease;
+  }
+
+  .l2-pillar .relief.is-ready .relief-layer {
+    animation: column-raise 1600ms var(--ease) both;
+  }
+
+  .l2-pillar:last-child .relief.is-ready .relief-layer {
+    animation-delay: 140ms;
+  }
+
+  .l2-hero .disc-stage {
+    animation: disc-strike 1500ms var(--ease) 120ms both;
+  }
+
+  /* "backwards": the letters wait hidden for their turn, then hand back to
+     the swap's own transitions once they're cut. */
+  .title-swap [lang="el"] .ch {
+    animation: chisel 950ms var(--ease) backwards;
+    animation-delay: calc(560ms + var(--i) * 55ms);
+  }
+
+  .l2-bar,
+  .l2-heading p,
+  .l2-hero .disc-caption,
+  .l2-hero .disc-mute {
+    animation: settle-in 900ms ease 1450ms backwards;
+  }
+
+  /* 2. Greek key rules */
+  .l2.motion-ready [data-reveal] .meander-rule path {
+    transition: stroke-dashoffset 1900ms cubic-bezier(0.65, 0, 0.35, 1) 120ms;
+  }
+
+  .l2.motion-ready [data-reveal]:not(.is-revealed) .meander-rule path {
+    stroke-dashoffset: 1;
+    transition: none;
+  }
+
+  /* 3. Inscriptions */
+  .l2.motion-ready [data-reveal] .rise {
+    transition:
+      opacity 700ms ease,
+      transform 1000ms var(--ease);
+    transition-delay: calc(240ms + var(--i, 0) * 80ms);
+  }
+
+  .l2.motion-ready [data-reveal]:not(.is-revealed) .rise {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+    transition: none;
+  }
+
+  /* 4. Unveiling */
+  .l2.motion-ready .unveil > .relief {
+    transition:
+      clip-path 1500ms var(--ease),
+      opacity 1000ms ease;
+  }
+
+  .l2.motion-ready .unveil:not(.is-revealed) > .relief {
+    clip-path: inset(12% 0 12% 0);
+    opacity: 0;
+    transition: none;
   }
 }
 
-@keyframes athens-rise {
+@keyframes column-raise {
+  from {
+    transform: translate3d(0, 9%, 0);
+  }
+}
+
+@keyframes disc-strike {
   from {
     opacity: 0;
-    transform: translate3d(0, 24px, 0);
+    transform: rotate(-28deg) scale(0.94);
+  }
+}
+
+@keyframes chisel {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(0.12em);
+  }
+}
+
+@keyframes settle-in {
+  from {
+    opacity: 0;
   }
 }
 
@@ -659,7 +770,11 @@
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 40px;
+  margin-bottom: 18px;
+}
+
+.l2-record .meander-rule {
+  margin-bottom: 30px;
 }
 
 .l2-record .track-row button {
@@ -759,6 +874,10 @@
   .l2-record header {
     flex-direction: column;
     gap: 6px;
+    margin-bottom: 14px;
+  }
+
+  .l2-record .meander-rule {
     margin-bottom: 20px;
   }
 
@@ -775,8 +894,11 @@
     box-shadow: 0 0 0 10px rgba(255, 255, 255, 0.43);
   }
 
+  .l2-pair .facts-shell .meander-rule {
+    margin: 16px 0 20px;
+  }
+
   .l2-pair .facts-shell dl {
-    margin-top: 30px;
     gap: 14px;
   }
 
