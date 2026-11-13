@@ -1,3 +1,6 @@
+import { FALLBACK_MOVIE_TITLE } from "@/lib/letterboxd"
+import { FALLBACK_ALBUM_TITLE } from "@/lib/music/fallback"
+
 /**
  * An invisible copy of the homepage copy, laid out with the homepage's own
  * spacing, so the Music and Movies pages start exactly where the homepage
@@ -40,8 +43,14 @@ export function HomePagePositionAnchor() {
             BAINSA
           </span>
           . <br /> Recently, I&apos;ve also been listening to{" "}
-          <span className="font-medium text-primary">Graduation</span>, and
-          watching <span className="font-medium text-primary">Obsession</span>.
+          <span className="font-medium text-primary">
+            {FALLBACK_ALBUM_TITLE}
+          </span>
+          , and watching{" "}
+          <span className="font-medium text-primary">
+            {FALLBACK_MOVIE_TITLE}
+          </span>
+          .
         </p>
       </div>
       <p className="items-center text-muted-foreground">

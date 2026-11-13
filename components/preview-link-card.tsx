@@ -31,7 +31,8 @@ const CardContext = createContext<Card | null>(null)
 
 function useCard() {
   const card = useContext(CardContext)
-  if (!card) throw new Error("PreviewLinkCard parts must sit inside a PreviewLinkCard")
+  if (!card)
+    throw new Error("PreviewLinkCard parts must sit inside a PreviewLinkCard")
   return card
 }
 
@@ -72,7 +73,9 @@ function PreviewLinkCard({
   }, [imageSrc])
 
   return (
-    <CardContext.Provider value={{ href, src: imageSrc, width, height, isOpen }}>
+    <CardContext.Provider
+      value={{ href, src: imageSrc, width, height, isOpen }}
+    >
       <HoverCard.Root
         openDelay={openDelay}
         closeDelay={closeDelay}
@@ -148,7 +151,7 @@ function PreviewLinkCardContent({
                 style={{ display: "block" }}
                 href={href}
                 className={cn(
-                  "z-50 origin-(--radix-hover-card-content-transform-origin) rounded-md border shadow-md outline-hidden overflow-hidden",
+                  "z-50 origin-(--radix-hover-card-content-transform-origin) overflow-hidden rounded-md border shadow-md outline-hidden",
                   className
                 )}
                 {...anchor}
@@ -167,8 +170,16 @@ function PreviewLinkCardImage({ className }: { className?: string }) {
   const { src, width, height } = useCard()
 
   // A remote picture at the card's own size: nothing for next/image to do.
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} width={width} height={height} alt="preview image" className={className} />
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      width={width}
+      height={height}
+      alt="preview image"
+      className={className}
+    />
+  )
 }
 
 export {
