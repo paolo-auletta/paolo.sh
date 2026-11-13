@@ -150,7 +150,10 @@ async function getLetterboxdMovies() {
     .filter((movie): movie is LetterboxdMovie => Boolean(movie))
 }
 
-export async function getRecentLetterboxdMovies(limit = 5) {
+/** How many diary entries /movies lists. */
+export const DIARY_ROWS = 5
+
+export async function getRecentLetterboxdMovies(limit = DIARY_ROWS) {
   const movies = (await getLetterboxdMovies()).slice(0, limit)
   const directors = await Promise.all(
     movies.map((movie) => getDirectorForMovie(movie.link)),
@@ -162,8 +165,16 @@ export async function getRecentLetterboxdMovies(limit = 5) {
   }))
 }
 
+/**
+ * The latest film I both liked and rated: the one the homepage names. With
+ * its row in /movies' diary list, when it is among the entries listed there.
+ */
 export async function getLatestLikedRatedLetterboxdMovie() {
   const movies = await getLetterboxdMovies()
+  const index = movies.findIndex(
+    (movie) => movie.liked && movie.rating !== undefined,
+  )
+  if (index < 0) return undefined
 
-  return movies.find((movie) => movie.liked && movie.rating !== undefined)
+  return { ...movies[index], row: index < DIARY_ROWS ? index : undefined }
 }

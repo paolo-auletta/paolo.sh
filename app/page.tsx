@@ -7,6 +7,11 @@ import Link from "next/link"
 import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import {
+  MoviesGhost,
+  MusicGhost,
+  usePinnedCardWidth,
+} from "@/components/archive-ghost"
+import {
   PreviewLinkCard,
   PreviewLinkCardContent,
   PreviewLinkCardImage,
@@ -20,6 +25,7 @@ import { EASE, entranceTransition, fadeUp } from "@/components/motion/entrance"
 import { ARRIVE_MS, arriveHome } from "@/components/paper-fill"
 import { FALLBACK_MOVIE_TITLE } from "@/lib/letterboxd"
 import { FALLBACK_ALBUM_TITLE } from "@/lib/music/fallback"
+import { cn } from "@/lib/utils"
 
 /**
  * After the intro's entrance settles, the sentence's own hierarchy inks in:
@@ -94,6 +100,13 @@ const inlineLinkClassName =
 const asideLinkClassName =
   "inline cursor-pointer whitespace-nowrap italic transition-colors hover:text-foreground"
 
+/**
+ * An artwork preview is the picture as its page pins it: a square-cornered
+ * frame with a hairline border, the size of a pinned card there. Clicking
+ * through carries it onto that page (components/motion/carried-cover.ts).
+ */
+const artworkCardClassName = "rounded-none border-border/70 shadow-sm"
+
 type LinkPreviewProps = {
   children: ReactNode
   height: number
@@ -149,9 +162,12 @@ function LinkPreview({
     >
       <PreviewLinkCardTrigger>{trigger}</PreviewLinkCardTrigger>
       <PreviewLinkCardContent
-        className="border-border/70 bg-background p-0"
+        className={cn(
+          "border-border/70 bg-background p-0",
+          internal && artworkCardClassName
+        )}
         side="top"
-        {...(internal ? {} : externalLinkProps)}
+        {...(internal ? { "data-carry": "" } : externalLinkProps)}
       >
         <PreviewLinkCardImage className="block h-auto" />
       </PreviewLinkCardContent>
@@ -159,7 +175,8 @@ function LinkPreview({
   )
 }
 
-type Latest = { title?: string; image?: string }
+/** `row`: for the film, its row in /movies' diary list, if it is there. */
+type Latest = { title?: string; image?: string; row?: number }
 
 /**
  * The latest album and film, fetched once per visit. Coming back to the
@@ -180,11 +197,16 @@ function loadLatest() {
         }
         return response.json() as Promise<{
           posterUrl?: string
+          row?: number
           title?: string
         }>
       })
       .then((movie) => {
-        latest.movie = { title: movie.title, image: movie.posterUrl }
+        latest.movie = {
+          title: movie.title,
+          image: movie.posterUrl,
+          row: movie.row,
+        }
       })
       .catch(() => {
         // Keep the fallback copy when the feed is unavailable.
@@ -238,6 +260,12 @@ export default function Page() {
   const latestMusicArtwork = latestMusic?.image
   const [expandedOffsetY, setExpandedOffsetY] = useState(0)
   const readMoreButtonRef = useRef<HTMLButtonElement>(null)
+  const musicGhostRef = useRef<HTMLDivElement>(null)
+  // The album and film previews open at their pinned cards' size. Their
+  // pictures sit inside the frame's 1px border; posters are 2:3.
+  const cardWidth = usePinnedCardWidth(musicGhostRef, 152)
+  const coverSize = cardWidth - 2
+  const posterHeight = cardWidth * 1.5 - 2
 
   useEffect(() => {
     if (latest.movie && latest.music) return
@@ -364,6 +392,9 @@ export default function Page() {
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden">
       <HomeScene playIntro={playIntro} onReveal={() => setIsRevealed(true)} />
+      {/* Where the album and the film will lie on their pages. */}
+      <MusicGhost ref={musicGhostRef} />
+      {latestMovie?.row !== undefined && <MoviesGhost row={latestMovie.row} />}
       <div
         data-home-copy
         className="relative z-10 flex flex-1 flex-col items-center [justify-content:safe_center] pt-[9svh] pb-[12svh] sm:pt-14 sm:pb-[40svh] md:pt-16"
@@ -492,23 +523,23 @@ export default function Page() {
                   </LinkPreview>
                   .<br /> Recently, I&apos;ve also been listening to{" "}
                   <LinkPreview
-                    height={220}
+                    height={coverSize}
                     href="/music"
                     internal
                     quiet
                     src={latestMusicArtwork}
-                    width={220}
+                    width={coverSize}
                   >
                     {latestMusicTitle}
                   </LinkPreview>
                   , and watching{" "}
                   <LinkPreview
-                    height={231}
+                    height={posterHeight}
                     href="/movies"
                     internal
                     quiet
                     src={latestMoviePoster}
-                    width={154}
+                    width={coverSize}
                   >
                     {latestMovieTitle}
                   </LinkPreview>

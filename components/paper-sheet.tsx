@@ -11,15 +11,22 @@ import { previousPathname } from "@/components/navigation-history"
  * are dealt onto the table and the list unfolds. Only when the page is
  * entered, from the homepage or as the first page of a visit; coming back
  * from within the section (the monthly archive, say), everything is
- * already on the table.
+ * already on the table. A `still` sheet is never dealt: it is laid out only
+ * to be measured (see components/archive-ghost.tsx).
  */
-export function PaperSheet({ children }: { children: ReactNode }) {
+export function PaperSheet({
+  children,
+  still = false,
+}: {
+  children: ReactNode
+  still?: boolean
+}) {
   const sheetRef = useRef<HTMLDivElement>(null)
 
   // Read once, while the page renders.
   const [deal] = useState(() => {
     const from = previousPathname()
-    return from === null || from === "/"
+    return !still && (from === null || from === "/")
   })
   useEntrance(
     sheetRef,
