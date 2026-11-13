@@ -3,6 +3,13 @@
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useLayoutEffect, useRef } from "react"
 
+import {
+  animateFill,
+  ARRIVE_MS,
+  LEAVE_MS,
+  prefersReducedMotion,
+} from "@/components/paper-fill"
+
 /**
  * The homepage's paper is the bridge to every other page. Leaving, the paper
  * under the copy grows out until it is the whole page background, and only
@@ -10,56 +17,18 @@ import { useEffect, useLayoutEffect, useRef } from "react"
  * fully papered and the paper draws back in to the copy, letting the scene
  * through again.
  *
- * The scenes read the paper's fill from here every frame; this file owns the
- * timing and the link clicks that start it.
+ * The paper's fill itself lives in components/paper-fill.ts; this file owns
+ * the link clicks that start it.
  */
 
-/** ms: the paper spreading out to the edges before the next page. */
-export const LEAVE_MS = 480
-/** ms: the paper drawing back in to the copy on the way home. */
-export const ARRIVE_MS = 820
 /** ms: another page's content fading out before going home. */
 const PAGE_OUT_MS = 160
 
-type Fill = {
-  from: number
-  to: number
-  /** null until a scene first reads it: the clock starts on the first frame. */
-  start: number | null
-  duration: number
-}
-
-let fill: Fill = { from: 0, to: 0, start: 0, duration: 0 }
-
-/** Gentle at both ends, so the paper is still visibly moving near the end. */
-const easeInOut = (x: number) => -(Math.cos(Math.PI * x) - 1) / 2
-
-/** How much of the screen the paper covers beyond its resting shape, 0–1. */
-export function paperFillAt(now: number) {
-  if (fill.start === null) fill.start = now
-  if (fill.duration <= 0) return fill.to
-  const t = Math.min(1, Math.max(0, (now - fill.start) / fill.duration))
-  return fill.from + (fill.to - fill.from) * easeInOut(t)
-}
-
-function animateFill(to: number, duration: number, from?: number) {
-  const now = performance.now()
-  fill = { from: from ?? paperFillAt(now), to, start: now, duration }
-}
-
-const prefersReducedMotion = () =>
-  window.matchMedia("(prefers-reduced-motion: reduce)").matches
-
-/**
- * Coming back to the homepage: the scene's first frame is all paper, then it
- * draws back. Called while the homepage renders, before the scene draws.
- */
-export function arriveHome() {
-  if (prefersReducedMotion()) {
-    fill = { from: 0, to: 0, start: 0, duration: 0 }
-    return
-  }
-  fill = { from: 1, to: 0, start: null, duration: ARRIVE_MS }
+/** Drops the leaving state: the page is shown again as it is. */
+function clearLeaving() {
+  const root = document.documentElement
+  delete root.dataset.homeLeaving
+  delete root.dataset.pageLeaving
 }
 
 /** Where a click is going, if it's a plain in-site navigation. */
@@ -96,9 +65,7 @@ export function PageTransitions() {
 
   // The new page is in: drop the leaving state before it paints.
   useLayoutEffect(() => {
-    const root = document.documentElement
-    delete root.dataset.homeLeaving
-    delete root.dataset.pageLeaving
+    clearLeaving()
     busy.current = false
   }, [pathname])
 
@@ -133,8 +100,7 @@ export function PageTransitions() {
       window.setTimeout(() => {
         if (!busy.current) return
         busy.current = false
-        delete root.dataset.homeLeaving
-        delete root.dataset.pageLeaving
+        clearLeaving()
         if (fromHome) animateFill(0, ARRIVE_MS)
       }, 4000)
     }

@@ -9,6 +9,18 @@
  * roughly half the hull length.
  */
 
+import {
+  cellWindow,
+  len2,
+  len3,
+  sdCapsule,
+  sdEllipsoid,
+  sdRoundCone,
+  sdSlab,
+  type CellCallback,
+  type CellRaster,
+} from "@/components/home/ascii-sdf"
+
 export type PlanePose = {
   /** Heading. 0 = nose to screen-right, +π/2 = nose toward the viewer. */
   yaw: number
@@ -22,34 +34,11 @@ export type PlanePose = {
   prop: number
 }
 
-export type PlaneRaster = {
-  /** Screen-pixel position of the model origin. */
-  originX: number
-  originY: number
-  /** Screen pixels per model unit. */
-  scale: number
-  /** Cell grid, aligned to screen pixel (0, 0). */
-  cellWidth: number
-  cellHeight: number
-  /** Visible region in screen pixels; cells outside it are skipped. */
-  viewWidth: number
-  viewHeight: number
-  /** Glyphs from least to most lit. */
-  ramp?: string
-}
-
-export type CellCallback = (
-  col: number,
-  row: number,
-  glyph: string,
-  color: number
-) => void
-
 /**
- * Glyph ramp, sparsest to densest. A single glyph by default: the plane is
- * shaded by color alone, which reads as a solid little sprite.
+ * The one glyph the plane is drawn in (but for its propeller): it is shaded
+ * by color alone, which reads as a solid little sprite.
  */
-const RAMP = "#"
+const GLYPH = "#".charCodeAt(0)
 
 // Materials ------------------------------------------------------------------
 
@@ -78,114 +67,6 @@ const PALETTE: [number, number, number][] = [
 // Shared scratch state (keeps the hot loop allocation-free) ------------------
 
 let hitMaterial = MAT_BODY
-
-// Math.hypot is slow in V8; these are the hot path.
-function len2(x: number, y: number) {
-  return Math.sqrt(x * x + y * y)
-}
-
-function len3(x: number, y: number, z: number) {
-  return Math.sqrt(x * x + y * y + z * z)
-}
-
-// SDF primitives ---------------------------------------------------------------
-
-export function sdEllipsoid(
-  x: number,
-  y: number,
-  z: number,
-  rx: number,
-  ry: number,
-  rz: number
-) {
-  const k0 = len3(x / rx, y / ry, z / rz)
-  const k1 = len3(x / (rx * rx), y / (ry * ry), z / (rz * rz))
-  return k1 === 0 ? -Math.min(rx, ry, rz) : (k0 * (k0 - 1)) / k1
-}
-
-export function sdCapsule(
-  px: number,
-  py: number,
-  pz: number,
-  ax: number,
-  ay: number,
-  az: number,
-  bx: number,
-  by: number,
-  bz: number,
-  r: number
-) {
-  const pax = px - ax
-  const pay = py - ay
-  const paz = pz - az
-  const bax = bx - ax
-  const bay = by - ay
-  const baz = bz - az
-  const h = Math.min(
-    1,
-    Math.max(
-      0,
-      (pax * bax + pay * bay + paz * baz) / (bax * bax + bay * bay + baz * baz)
-    )
-  )
-  return len3(pax - bax * h, pay - bay * h, paz - baz * h) - r
-}
-
-/** Round cone between two points along the x axis (Inigo Quilez). */
-export function sdRoundCone(
-  px: number,
-  py: number,
-  pz: number,
-  ax: number,
-  ay: number,
-  r1: number,
-  bx: number,
-  by: number,
-  r2: number
-) {
-  const bax = bx - ax
-  const bay = by - ay
-  const l2 = bax * bax + bay * bay
-  const rr = r1 - r2
-  const a2 = l2 - rr * rr
-  const il2 = 1 / l2
-
-  const pax = px - ax
-  const pay = py - ay
-  const paz = pz
-  const y = pax * bax + pay * bay
-  const z = y - l2
-  const qx = pax * l2 - bax * y
-  const qy = pay * l2 - bay * y
-  const qz = paz * l2
-  const x2 = qx * qx + qy * qy + qz * qz
-  const y2 = y * y * l2
-  const z2 = z * z * l2
-  const k = Math.sign(rr) * rr * rr * x2
-  if (Math.sign(z) * a2 * z2 > k) return Math.sqrt(x2 + z2) * il2 - r2
-  if (Math.sign(y) * a2 * y2 < k) return Math.sqrt(x2 + y2) * il2 - r1
-  return (Math.sqrt(x2 * a2 * il2) + y * rr) * il2 - r1
-}
-
-/** A 2D rounded rectangle extruded along the third axis. */
-function sdSlab(
-  u: number,
-  v: number,
-  w: number,
-  hu: number,
-  hv: number,
-  radius: number,
-  thickness: number
-) {
-  const qu = Math.abs(u) - hu + radius
-  const qv = Math.abs(v) - hv + radius
-  const d2 =
-    Math.min(Math.max(qu, qv), 0) +
-    len2(Math.max(qu, 0), Math.max(qv, 0)) -
-    radius
-  const dw = Math.abs(w) - thickness
-  return Math.min(Math.max(d2, dw), 0) + len2(Math.max(d2, 0), Math.max(dw, 0))
-}
 
 // The model --------------------------------------------------------------------
 
@@ -285,11 +166,11 @@ const BOX_MAX = [0.95, 0.66, 1.32]
 
 /**
  * Rasterizes the plane. `onCell` is called once per covered cell, in no
- * particular order. Returns the number of covered cells.
+ * particular order.
  */
 export function rasterizePlane(
   pose: PlanePose,
-  raster: PlaneRaster,
+  raster: CellRaster,
   onCell: CellCallback
 ) {
   // Model → view rotation: tilt · yaw · pitch · roll.
@@ -306,18 +187,7 @@ export function rasterizePlane(
   const lz = m[2] * lvx + m[5] * lvy + m[8] * lvz
 
   const { originX, originY, scale, cellWidth, cellHeight } = raster
-  const ramp = raster.ramp ?? RAMP
-  const reach = 1.75 * scale
-  const col0 = Math.max(0, Math.floor((originX - reach) / cellWidth))
-  const col1 = Math.min(
-    Math.ceil(raster.viewWidth / cellWidth),
-    Math.ceil((originX + reach) / cellWidth)
-  )
-  const row0 = Math.max(0, Math.floor((originY - reach) / cellHeight))
-  const row1 = Math.min(
-    Math.ceil(raster.viewHeight / cellHeight),
-    Math.ceil((originY + reach) / cellHeight)
-  )
+  const { col0, col1, row0, row1 } = cellWindow(raster, 1.75 * scale)
 
   const eps = (0.35 * Math.min(cellWidth, cellHeight)) / scale
   const invDx = 1 / dx
@@ -428,9 +298,7 @@ export function rasterizePlane(
     // underneath and highlights only where the light glints.
     const tones = PALETTE[material]
     const tone = lum < 0.4 ? 0 : lum < 0.9 ? 1 : 2
-    glyphBuffer[index] = ramp.charCodeAt(
-      Math.min(ramp.length - 1, (lum * ramp.length) | 0)
-    )
+    glyphBuffer[index] = GLYPH
     colorBuffer[index] = tones[tone]
   }
 
@@ -496,7 +364,6 @@ export function rasterizePlane(
     }
   }
 
-  let covered = 0
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const index = r * cols + c
@@ -512,11 +379,8 @@ export function rasterizePlane(
       if (neighbors < 3) continue
 
       onCell(c + col0, r + row0, String.fromCharCode(glyph), colorBuffer[index])
-      covered++
     }
   }
-
-  return covered
 }
 
 let glyphBuffer = new Uint16Array(0)

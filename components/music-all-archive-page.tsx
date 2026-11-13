@@ -1,17 +1,18 @@
 "use client"
 
-import { Dot } from "lucide-react"
 import { motion, useReducedMotion } from "motion/react"
-import Image from "next/image"
 
+import { Artwork } from "@/components/artwork"
+import { EASE } from "@/components/motion/entrance"
 import { MusicArchiveNav } from "@/components/music-archive-nav"
+import { AlbumCaption, SongSummary } from "@/components/music/recap-items"
 import {
   type MusicAlbum,
   type MusicArchiveMonth,
   type MusicArchiveYear,
   type MusicRecap,
   type MusicSong,
-} from "@/lib/music"
+} from "@/lib/music/types"
 
 type MusicAllArchivePageProps = {
   musicRecap: MusicRecap
@@ -20,13 +21,11 @@ type MusicAllArchivePageProps = {
   selectedYear: MusicArchiveYear
 }
 
-const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
-
 function archiveTransition(delay: number, reducedMotion: boolean) {
   return {
     duration: reducedMotion ? 0 : 0.62,
     delay: reducedMotion ? 0 : delay,
-    ease,
+    ease: EASE,
   }
 }
 
@@ -51,14 +50,6 @@ const archiveVisible = {
   filter: "blur(0px)",
 }
 
-function formatMinutes(minutes: number) {
-  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
-}
-
-function formatStreams(streams: number) {
-  return `${streams} ${streams === 1 ? "stream" : "streams"}`
-}
-
 function chunk<T>(items: T[], size: number) {
   return Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
     items.slice(index * size, index * size + size)
@@ -74,33 +65,16 @@ function MusicArtwork({
   sizes: string
   title: string
 }) {
-  const initials = title
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-
   return (
-    <div
-      aria-label={title}
+    <Artwork
+      alt={`${title} cover`}
       className="relative aspect-square overflow-hidden shadow-sm"
-    >
-      {artworkUrl ? (
-        <Image
-          src={artworkUrl}
-          alt={`${title} cover`}
-          fill
-          className="object-fill"
-          sizes={sizes}
-          unoptimized
-        />
-      ) : (
-        <span className="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70">
-          {initials}
-        </span>
-      )}
-    </div>
+      imageClassName="object-fill"
+      initialsClassName="absolute right-1.5 bottom-1.5 font-serif text-xs font-semibold text-muted-foreground/70"
+      sizes={sizes}
+      src={artworkUrl}
+      title={title}
+    />
   )
 }
 
@@ -130,18 +104,7 @@ function AlbumCard({
           {album.rank}
         </span>
       </div>
-      <div className="mt-2 min-w-0">
-        <h3 className="truncate text-sm font-medium text-foreground">
-          {album.title}
-        </h3>
-        <p className="flex min-w-0 items-center text-xs text-muted-foreground">
-          <span className="truncate">{album.artist}</span>
-          <Dot className="size-3 shrink-0" aria-hidden="true" />
-          <span className="shrink-0 tabular-nums">
-            {formatMinutes(album.minutes)}
-          </span>
-        </p>
-      </div>
+      <AlbumCaption album={album} />
     </motion.article>
   )
 }
@@ -181,15 +144,7 @@ function SongRow({
             title={song.title}
           />
         </div>
-        <div className="min-w-0">
-          <h3 className="truncate font-medium text-foreground">{song.title}</h3>
-          <p className="truncate text-sm text-muted-foreground">
-            {song.artist}
-          </p>
-        </div>
-        <p className="ml-auto shrink-0 text-right text-sm text-muted-foreground tabular-nums">
-          {formatStreams(song.streams)}
-        </p>
+        <SongSummary song={song} />
       </div>
     </motion.li>
   )

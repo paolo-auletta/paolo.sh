@@ -16,39 +16,23 @@
  * The last three wait until their section scrolls into view.
  */
 
-import { useEffect, useRef, type CSSProperties } from "react"
+import type { CSSProperties } from "react"
 
 import { ALBUM, TOTAL_SECONDS, TRACKS, downloadAll } from "./data"
 import { DiscPlayer, DownloadGlyph, MeanderRule, Sep, TitleSwap, TrackRow } from "./parts"
 import { ReliefCanvas } from "./relief-canvas"
 import { useAlbumPlayer } from "./use-album-player"
+import { useReveal } from "./use-reveal"
 
-/**
- * Marks each [data-reveal] section with .is-revealed as it scrolls into view.
- * Sections only start hidden once this runs (.motion-ready on the page), so
- * without JS, or with reduced motion, everything simply shows.
- */
-function useReveal() {
-  const ref = useRef<HTMLElement>(null)
-  useEffect(() => {
-    const page = ref.current
-    if (!page || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
-    page.classList.add("motion-ready")
-    const els = Array.from(page.querySelectorAll<HTMLElement>("[data-reveal]"))
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (!e.isIntersecting) continue
-          e.target.classList.add("is-revealed")
-          io.unobserve(e.target)
-        }
-      },
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.15 }
-    )
-    els.forEach((el) => io.observe(el))
-    return () => io.disconnect()
-  }, [])
-  return ref
+const GREEK_TITLE = {
+  lines: ALBUM.titleGreek.split(" "),
+  lang: "el",
+  label: `${ALBUM.titleGreek}. Translate the title`,
+}
+const LATIN_TITLE = {
+  lines: ALBUM.titleLatin.split(" "),
+  lang: "it",
+  label: `${ALBUM.titleLatin}. Show the Greek title`,
 }
 
 export function AlbumPage() {
@@ -69,7 +53,7 @@ export function AlbumPage() {
           </div>
           <DiscPlayer player={player} />
           <div className="l2-heading">
-            <TitleSwap />
+            <TitleSwap greek={GREEK_TITLE} latin={LATIN_TITLE} />
             <p>{ALBUM.artists}</p>
           </div>
         </section>

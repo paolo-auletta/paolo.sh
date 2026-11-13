@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useRef } from "react"
 import { preload } from "react-dom"
 
 import { projectPoint, rasterizePlane } from "@/components/home/ascii-plane"
+import { bucketCells } from "@/components/home/ascii-sdf"
 import {
   INTRO,
   cameraProgress,
@@ -27,9 +28,16 @@ import {
   type PaperRenderer,
 } from "@/components/home/paper"
 import { watchDoubleClicks } from "@/components/home/double-click"
-import { DriftingClouds } from "@/components/home/drifting-clouds"
+import { createDayClouds } from "@/components/home/drifting-clouds"
+import {
+  canvasPixelRatio,
+  readBackgroundRgb,
+  readDebugTime,
+  readKeepRect,
+  readMonoFont,
+} from "@/components/home/scene-dom"
 import { Smoke } from "@/components/home/smoke"
-import { paperFillAt } from "@/components/page-transition"
+import { paperFillAt } from "@/components/paper-fill"
 import { cn } from "@/lib/utils"
 
 /** The baked painting: generated sky on top, the film still underneath. */
@@ -178,12 +186,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       return
     }
 
-    const debugTime =
-      process.env.NODE_ENV === "development"
-        ? Number.parseFloat(
-            new URLSearchParams(window.location.search).get("t") ?? ""
-          )
-        : Number.NaN
+    const debugTime = readDebugTime()
 
     // On a slow load the copy may already be showing on plain paper (the
     // fallback in globals.css). Don't make anyone sit through the intro after
@@ -216,9 +219,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
         lastPaperKey = ""
       }
     )
-    const planeFont = getComputedStyle(document.documentElement)
-      .getPropertyValue("--font-mono")
-      .trim()
+    const planeFont = readMonoFont()
     const smoke = new Smoke()
     let smokeClock = clock
     const buckets = new Map<number, number[]>()
@@ -229,13 +230,13 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     let worldScale = 1
     let descent = 0
     let camera = 0
-    let paperColor = readPaperColor()
+    let paperColor = readBackgroundRgb(document.body, [1, 1, 1])
     let isDark = document.documentElement.classList.contains("dark")
 
     const resize = () => {
       const width = window.innerWidth
       const height = window.innerHeight
-      const ratio = Math.min(window.devicePixelRatio || 1, 2)
+      const ratio = canvasPixelRatio()
       layout = getLayout(width, height)
       wanderer = new Wanderer(layout)
       worldScale = Math.max(width / WORLD.width, height / PHOTO_HEIGHT)
@@ -369,7 +370,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       smokeClock = t
       if (!frame) {
         smoke.update(dt, 0, 0, 0)
-        smoke.draw(context, planeFont || "monospace")
+        smoke.draw(context, planeFont)
         return
       }
 
@@ -383,9 +384,9 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       // Smoke from the back of the engine nacelle, drawn under the plane.
       const exhaust = projectPoint(frame.pose, frame.scale, -0.2, 0.4, 0)
       smoke.update(dt, frame.x + exhaust.x, frame.y + exhaust.y, frame.scale)
-      smoke.draw(context, planeFont || "monospace")
+      smoke.draw(context, planeFont)
 
-      context.font = `700 ${fontSize}px ${planeFont || "monospace"}`
+      context.font = `700 ${fontSize}px ${planeFont}`
       context.textAlign = "center"
       context.textBaseline = "middle"
 
@@ -398,7 +399,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
       const shiftX = frame.x - anchorX
       const shiftY = frame.y - anchorY
 
-      for (const cells of buckets.values()) cells.length = 0
+      const onCell = bucketCells(buckets)
       rasterizePlane(
         frame.pose,
         {
@@ -410,14 +411,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
           viewWidth: layout.width - shiftX,
           viewHeight: layout.height - shiftY,
         },
-        (col, row, glyph, color) => {
-          let cells = buckets.get(color)
-          if (!cells) {
-            cells = []
-            buckets.set(color, cells)
-          }
-          cells.push(col, row, glyph.charCodeAt(0))
-        }
+        onCell
       )
 
       for (const [color, cells] of buckets) {
@@ -441,15 +435,11 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     const drawPaper = (t: number, fill: number) => {
       const wash = paperProgress(t)
       const keep = readKeepRect()
-      const photo = {
-        left: (layout.width - WORLD.width * worldScale) / 2,
-        top: (WORLD.height - PHOTO_HEIGHT) * worldScale - camera,
-        width: WORLD.width * worldScale,
-        height: PHOTO_HEIGHT * worldScale,
-      }
+      const photo = photoRect()
       const { mist, bands, hug } = paperShape(layout.width, layout.height, keep)
-      const mistEnd = mist.end
-      const key = `${mistEnd.toFixed(0)}|${hug.toFixed(0)}|${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}|${fill.toFixed(4)}`
+      // Everything the paper is drawn from (its shape follows from the screen
+      // and the copy's box).
+      const key = `${wash.toFixed(4)}|${keep.left}|${keep.top}|${keep.right}|${keep.bottom}|${layout.width}x${layout.height}|${photo.top.toFixed(1)}|${paperColor.join()}|${fill.toFixed(4)}`
       if (key === lastPaperKey) return
       lastPaperKey = key
       if (paper) {
@@ -477,7 +467,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
 
     // Once the page has settled, clouds come and go in the sky above the
     // hills, as at night. Not for reduced motion.
-    const drifting = new DriftingClouds()
+    const drifting = createDayClouds()
     let drewDrifters = false
     const drawDrifters = (t: number) => {
       if (reducedMotion || t < INTRO.paperEnd) {
@@ -550,7 +540,7 @@ export function SkyScene({ playIntro, onReveal }: SkySceneProps) {
     )
 
     const themeObserver = new MutationObserver(() => {
-      paperColor = readPaperColor()
+      paperColor = readBackgroundRgb(document.body, [1, 1, 1])
       isDark = document.documentElement.classList.contains("dark")
       lastPaperKey = ""
       render(clock)
@@ -693,45 +683,4 @@ function CloudSprite({
       />
     </div>
   )
-}
-
-/** The page background as linear-ish 0–1 RGB, whatever color space CSS uses. */
-function readPaperColor(): [number, number, number] {
-  const canvas = document.createElement("canvas")
-  canvas.width = canvas.height = 1
-  const context = canvas.getContext("2d", { willReadFrequently: true })
-  if (!context) return [1, 1, 1]
-  context.fillStyle = getComputedStyle(document.body).backgroundColor
-  context.fillRect(0, 0, 1, 1)
-  const [r, g, b] = context.getImageData(0, 0, 1, 1).data
-  return [r / 255, g / 255, b / 255]
-}
-
-/** Union of everything the paper must stay under, in viewport pixels. */
-function readKeepRect() {
-  const rect = {
-    left: Infinity,
-    top: Infinity,
-    right: -Infinity,
-    bottom: -Infinity,
-  }
-  document.querySelectorAll<HTMLElement>("[data-paper-keep]").forEach((el) => {
-    const box = el.getBoundingClientRect()
-    if (!box.width || !box.height) return
-    rect.left = Math.min(rect.left, box.left)
-    rect.top = Math.min(rect.top, box.top)
-    rect.right = Math.max(rect.right, box.right)
-    rect.bottom = Math.max(rect.bottom, box.bottom)
-  })
-  if (!Number.isFinite(rect.left)) {
-    const w = window.innerWidth
-    const h = window.innerHeight
-    return { left: w * 0.3, top: h * 0.3, right: w * 0.7, bottom: h * 0.6 }
-  }
-  return {
-    left: Math.round(rect.left),
-    top: Math.round(rect.top),
-    right: Math.round(rect.right),
-    bottom: Math.round(rect.bottom),
-  }
 }

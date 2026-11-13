@@ -13,7 +13,7 @@ export function isInteractive(target: EventTarget | null) {
 }
 
 /** Whether a point is on a character of text, not just inside its box. */
-export function isOverText(x: number, y: number) {
+function isOverText(x: number, y: number) {
   const doc = document as Document & {
     caretPositionFromPoint?: (
       x: number,

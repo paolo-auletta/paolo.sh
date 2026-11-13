@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { getLatestMusicRecap } from "@/lib/music"
+import { FALLBACK_ALBUM_TITLE, getLatestMusicRecap } from "@/lib/music"
 
 export const fetchCache = "force-cache"
 export const revalidate = false
@@ -10,7 +10,7 @@ export async function GET() {
   const album = recap.albums[0]
 
   return NextResponse.json({
-    album: album?.title ?? "Graduation",
+    album: album?.title ?? FALLBACK_ALBUM_TITLE,
     artist: album?.artist,
     artworkUrl: album?.artworkUrl,
   })

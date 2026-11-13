@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, type CSSProperties, type SVGProps } from "
 import { cn } from "@/lib/utils"
 
 import { ALBUM, TRACKS, formatTime, type Track } from "./data"
+import { KEY, meanderRing } from "./meander"
 import { ReliefCanvas } from "./relief-canvas"
 import type { AlbumPlayer } from "./use-album-player"
 
@@ -57,23 +58,18 @@ export const Sep = () => <span className="sep" aria-hidden />
 
 /* ───────────────────────── meander rule ───────────────────────── */
 
-/** One Greek key on a 10×8 grid, entering bottom left, leaving bottom right. */
-const KEY: [number, number][] = [
-  [0, 8], [0, 0], [8, 0], [8, 6], [4, 6], [4, 4], [6, 4], [6, 2], [2, 2], [2, 8], [10, 8],
-]
-
 /**
  * A running Greek key as a rule between a heading and what it heads. It fits
  * as many whole keys as the width allows, centred, and draws itself in when
  * its section is revealed (see .meander-rule in athens.css).
  */
-export function MeanderRule({ unit = 1.5, className }: { unit?: number; className?: string }) {
+export function MeanderRule({ unit = 1.5 }: { unit?: number }) {
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   useEffect(() => {
     const el = ref.current
     if (!el) return
-    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry!.contentRect.width)))
+    const ro = new ResizeObserver(([entry]) => setWidth(Math.floor(entry.contentRect.width)))
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
@@ -89,7 +85,7 @@ export function MeanderRule({ unit = 1.5, className }: { unit?: number; classNam
         .join("L")
     : ""
   return (
-    <div ref={ref} className={cn("meander-rule", className)} style={{ height: h }} aria-hidden>
+    <div ref={ref} className="meander-rule" style={{ height: h }} aria-hidden>
       {keys > 0 && (
         <svg width={width} height={h} viewBox={`0 0 ${width} ${h}`}>
           <path d={d} pathLength={1} />
@@ -106,15 +102,7 @@ export function MeanderRule({ unit = 1.5, className }: { unit?: number; classNam
  * with the blue play button in its well. Each of its six sectors (I–VI) is a
  * track; clicking one plays it.
  */
-export function DiscPlayer({
-  player,
-  className,
-  caption = true,
-}: {
-  player: AlbumPlayer
-  className?: string
-  caption?: boolean
-}) {
+export function DiscPlayer({ player }: { player: AlbumPlayer }) {
   const { current, isPlaying, muted, progress, duration } = player
   const pct = duration > 0 ? Math.min(1, progress / duration) : 0
 
@@ -129,7 +117,7 @@ export function DiscPlayer({
   }
 
   return (
-    <div className={cn("disc-cell", className)}>
+    <div className="disc-cell">
       <ReliefCanvas
         name="disc"
         className="disc-stage"
@@ -161,25 +149,23 @@ export function DiscPlayer({
           {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
         </button>
       </ReliefCanvas>
-      {caption && (
-        <p className="disc-caption">
-          {current ? (
-            <>
-              {current.numeral}. {current.title}
-              <Sep />
-              <span className="disc-time">
-                {formatTime(progress)} / {formatTime(duration)}
-              </span>
-            </>
-          ) : (
-            <>
-              {ALBUM.recordedPlaces}
-              <Sep />
-              {ALBUM.recordedYears}
-            </>
-          )}
-        </p>
-      )}
+      <p className="disc-caption">
+        {current ? (
+          <>
+            {current.numeral}. {current.title}
+            <Sep />
+            <span className="disc-time">
+              {formatTime(progress)} / {formatTime(duration)}
+            </span>
+          </>
+        ) : (
+          <>
+            {ALBUM.recordedPlaces}
+            <Sep />
+            {ALBUM.recordedYears}
+          </>
+        )}
+      </p>
       <button
         type="button"
         className={cn("disc-mute", muted && "is-muted")}
@@ -195,39 +181,19 @@ export function DiscPlayer({
 
 /*
  * A running Greek key bent into a ring, for the play button's hover. One key
- * is drawn on a 10×10 grid (x along the ring, y from the rim inwards) and
+ * is drawn on a 10×8 grid (x along the ring, y from the rim inwards) and
  * wrapped around the circle; the straight runs become arcs.
  */
 const MEANDER_KEYS = 14
 const MEANDER_OUTER = 45.5
 const MEANDER_STEP = 1.32 // ring radius per grid unit
 const MEANDER_INNER = MEANDER_OUTER - 10.6 * MEANDER_STEP
-
-const MEANDER_RING = (() => {
-  // One key; the first point continues the previous key's bottom run.
-  const key: [number, number][] = [
-    [0, 8], [0, 0], [8, 0], [8, 6], [4, 6], [4, 4], [6, 4], [6, 2], [2, 2], [2, 8], [10, 8],
-  ]
-  const at = (x: number, y: number) => {
-    const a = (x / (MEANDER_KEYS * 10)) * Math.PI * 2 - Math.PI / 2
-    const r = MEANDER_OUTER - (y + 0.4) * MEANDER_STEP
-    return `${(50 + Math.cos(a) * r).toFixed(2)} ${(50 + Math.sin(a) * r).toFixed(2)}`
-  }
-  const pts: string[] = []
-  for (let k = 0; k < MEANDER_KEYS; k++) {
-    key.forEach(([x, y], i) => {
-      if (k > 0 && i === 0) return
-      const prev = i > 0 ? key[i - 1]! : null
-      // Bend runs along the ring into a few short steps.
-      if (prev && prev[1] === y && Math.abs(x - prev[0]) > 1) {
-        const n = Math.abs(x - prev[0]) * 2
-        for (let j = 1; j < n; j++) pts.push(at(k * 10 + prev[0] + ((x - prev[0]) * j) / n, y))
-      }
-      pts.push(at(k * 10 + x, y))
-    })
-  }
-  return `M${pts.join("L")}Z`
-})()
+const MEANDER_RING = meanderRing({
+  keys: MEANDER_KEYS,
+  outer: MEANDER_OUTER,
+  step: MEANDER_STEP,
+  inset: 0.4,
+})
 
 /** A blue wash over the playing track's sector; it turns with the disc. */
 function SectorGlow({ index, playing }: { index: number; playing: boolean }) {
@@ -248,22 +214,39 @@ function SectorGlow({ index, playing }: { index: number; playing: boolean }) {
 
 /* ───────────────────────── title ───────────────────────── */
 
+/** One of the two titles TitleSwap stacks. */
+type Title = {
+  /** Its lines, each set as one row of letters. */
+  lines: string[]
+  lang: string
+  /** The button's label while this title shows. */
+  label: string
+}
+
 /**
- * The Greek title; clicking it translates it to Latin and back. Both titles
- * are always in the page, stacked in one grid cell (two lines each), so the
- * swap is only letters fading through blur: nothing around it moves.
+ * A Greek title; clicking it translates it to Latin letters and back. Both
+ * titles are always in the page, stacked in one grid cell, so the swap is
+ * only letters fading through blur: nothing around it moves.
  */
-export function TitleSwap({ className }: { className?: string }) {
-  const [latin, setLatin] = useState(false)
+export function TitleSwap({
+  greek,
+  latin,
+  className,
+}: {
+  greek: Title
+  latin: Title
+  className?: string
+}) {
+  const [showLatin, setShowLatin] = useState(false)
   return (
     <h1 className={cn("title-swap", className)}>
       <button
         type="button"
-        onClick={() => setLatin((l) => !l)}
-        aria-label={latin ? `${ALBUM.titleLatin}. Show the Greek title` : `${ALBUM.titleGreek}. Translate the title`}
+        onClick={() => setShowLatin((l) => !l)}
+        aria-label={showLatin ? latin.label : greek.label}
       >
-        <TitleLines lines={ALBUM.titleGreek.split(" ")} lang="el" hidden={latin} />
-        <TitleLines lines={ALBUM.titleLatin.split(" ")} lang="it" hidden={!latin} />
+        <TitleLines lines={greek.lines} lang={greek.lang} hidden={showLatin} />
+        <TitleLines lines={latin.lines} lang={latin.lang} hidden={!showLatin} />
       </button>
     </h1>
   )

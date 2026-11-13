@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 export const SITE_URL = "https://paolo.sh"
 export const SITE_NAME = "Paolo Auletta"
 const TITLE_TEMPLATE = `%s — ${SITE_NAME}`
-export const SITE_DESCRIPTION =
+const SITE_DESCRIPTION =
   "A student who cares about craft and detail, now bringing it to AI research: mechanistic interpretability and automated research."
 
 type Image = {
@@ -13,6 +13,9 @@ type Image = {
   alt: string
   type: string
 }
+
+/** A link preview, and the still X shows in its place. */
+type Card = { image: Image; still: Image }
 
 /**
  * The site's link previews: the homepage's two skies with just the name.
@@ -26,53 +29,64 @@ type Image = {
  * A link preview can't follow the reader's theme, so one of them has to be
  * the card everywhere: `CARD` picks which.
  */
-export const OG_IMAGES = {
-  day: {
-    url: "/og/day.gif",
-    width: 1200,
-    height: 630,
-    alt: "Paolo Auletta, over a painted meadow sky with a red seaplane",
-    type: "image/gif",
-  },
-  night: {
-    url: "/og/night.gif",
-    width: 1200,
-    height: 630,
-    alt: "Paolo Auletta, over a starry night where the Iron Giant's eyes sweep a searchlight across the pines",
-    type: "image/gif",
-  },
-  dayStill: {
-    url: "/og/day.jpg",
-    width: 1200,
-    height: 630,
-    alt: "Paolo Auletta, over a painted meadow sky with a red seaplane",
-    type: "image/jpeg",
-  },
-  nightStill: {
-    url: "/og/night.jpg",
-    width: 1200,
-    height: 630,
-    alt: "Paolo Auletta, over a starry night where the Iron Giant's eyes sweep a searchlight across the pines",
-    type: "image/jpeg",
-  },
-} satisfies Record<string, Image>
+const SKIES = {
+  day: sky(
+    "day",
+    "Paolo Auletta, over a painted meadow sky with a red seaplane"
+  ),
+  night: sky(
+    "night",
+    "Paolo Auletta, over a starry night where the Iron Giant's eyes sweep a searchlight across the pines"
+  ),
+}
 
-const CARD = "day" as "day" | "night"
-const DEFAULT_IMAGE = OG_IMAGES[CARD]
-const DEFAULT_STILL = OG_IMAGES[`${CARD}Still`]
+const CARD: keyof typeof SKIES = "day"
+
+function sky(name: string, alt: string): Card {
+  const size = { width: 1200, height: 630 }
+  return {
+    image: { url: `/og/${name}.gif`, ...size, alt, type: "image/gif" },
+    still: { url: `/og/${name}.jpg`, ...size, alt, type: "image/jpeg" },
+  }
+}
 
 /**
- * Everything a page shares about itself, filled in from a few fields.
+ * The Open Graph and X cards for a page.
  * Next replaces a parent's `openGraph` and `twitter` wholesale when a page
  * sets its own, so every page gets the complete set from here.
  */
+function shareCards(
+  title: string,
+  description: string,
+  url: string,
+  card: Card
+): Pick<Metadata, "openGraph" | "twitter"> {
+  return {
+    openGraph: {
+      type: "website",
+      siteName: SITE_NAME,
+      locale: "en_US",
+      url,
+      title,
+      description,
+      images: [card.image],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [card.still],
+    },
+  }
+}
+
+/** Everything a page shares about itself, filled in from a few fields. */
 export function pageMetadata({
   title,
   description,
   path,
   absoluteTitle = false,
-  image = DEFAULT_IMAGE,
-  still,
+  image,
 }: {
   title: string
   description: string
@@ -80,12 +94,10 @@ export function pageMetadata({
   path: string
   /** Use the title as is, without " — Paolo Auletta". */
   absoluteTitle?: boolean
-  /** The link preview (Open Graph). */
+  /** The page's own link preview, a still; the homepage's sky otherwise. */
   image?: Image
-  /** A still for X; the preview itself if it isn't animated. */
-  still?: Image
 }): Metadata {
-  const fullTitle = absoluteTitle ? title : `${title} — ${SITE_NAME}`
+  const fullTitle = absoluteTitle ? title : TITLE_TEMPLATE.replace("%s", title)
   return {
     // Always an object that carries the template on: a plain string in a
     // layout (mute's) would drop it for the pages under that layout.
@@ -94,21 +106,12 @@ export function pageMetadata({
       : { default: title, template: TITLE_TEMPLATE },
     description,
     alternates: { canonical: path },
-    openGraph: {
-      type: "website",
-      siteName: SITE_NAME,
-      locale: "en_US",
-      url: path,
-      title: fullTitle,
+    ...shareCards(
+      fullTitle,
       description,
-      images: [image],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: fullTitle,
-      description,
-      images: [still ?? (image === DEFAULT_IMAGE ? DEFAULT_STILL : image)],
-    },
+      path,
+      image ? { image, still: image } : SKIES[CARD]
+    ),
   }
 }
 
@@ -143,19 +146,5 @@ export const rootMetadata: Metadata = {
     ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
-  openGraph: {
-    type: "website",
-    siteName: SITE_NAME,
-    locale: "en_US",
-    url: "/",
-    title: SITE_NAME,
-    description: SITE_DESCRIPTION,
-    images: [DEFAULT_IMAGE],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: SITE_NAME,
-    description: SITE_DESCRIPTION,
-    images: [DEFAULT_STILL],
-  },
+  ...shareCards(SITE_NAME, SITE_DESCRIPTION, "/", SKIES[CARD]),
 }

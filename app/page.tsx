@@ -4,38 +4,22 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import Link from "next/link"
-import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ReactNode,
-} from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 
 import {
   PreviewLinkCard,
   PreviewLinkCardContent,
   PreviewLinkCardImage,
   PreviewLinkCardTrigger,
-} from "@/components/animate-ui/components/radix/preview-link-card"
+} from "@/components/preview-link-card"
 import { GiantNight } from "@/components/home/giant-night"
 import { readTheme, useHomeIntro, useHomeTheme } from "@/components/home/intro"
 import { SkyScene } from "@/components/home/sky-scene"
 import { Ink, inkLength, type InkMode } from "@/components/ink"
-import { ARRIVE_MS, arriveHome } from "@/components/page-transition"
-
-const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 18, filter: "blur(12px)" },
-  visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-}
-
-const transition = (delay: number) => ({
-  duration: 0.95,
-  delay: delay * 0.82,
-  ease,
-})
+import { EASE, entranceTransition, fadeUp } from "@/components/motion/entrance"
+import { ARRIVE_MS, arriveHome } from "@/components/paper-fill"
+import { FALLBACK_MOVIE_TITLE } from "@/lib/letterboxd"
+import { FALLBACK_ALBUM_TITLE } from "@/lib/music/fallback"
 
 /**
  * After the intro's entrance settles, the sentence's own hierarchy inks in:
@@ -48,7 +32,7 @@ const FOCUS_INK = { step: 22, duration: 320 }
 
 /** ms after the reveal: the accent's paragraph has risen and cleared. */
 const inkAt = (() => {
-  const accent = transition(0.15).delay * 1000 + 820
+  const accent = entranceTransition(0.15).delay * 1000 + 820
   const first = accent + inkLength(ACCENT) - 200
   const second = first + inkLength(FIRST_FIELD, FOCUS_INK) - 300
   return { accent, first, second }
@@ -163,7 +147,7 @@ function LinkPreview({
       src={src}
       width={width}
     >
-      <PreviewLinkCardTrigger asChild>{trigger}</PreviewLinkCardTrigger>
+      <PreviewLinkCardTrigger>{trigger}</PreviewLinkCardTrigger>
       <PreviewLinkCardContent
         className="border-border/70 bg-background p-0"
         side="top"
@@ -248,13 +232,11 @@ export default function Page() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [latestMovie, setLatestMovie] = useState(() => latest.movie)
   const [latestMusic, setLatestMusic] = useState(() => latest.music)
-  const latestMovieTitle = latestMovie?.title || "Obsession"
+  const latestMovieTitle = latestMovie?.title || FALLBACK_MOVIE_TITLE
   const latestMoviePoster = latestMovie?.image
-  const latestMusicTitle = latestMusic?.title || "Graduation"
+  const latestMusicTitle = latestMusic?.title || FALLBACK_ALBUM_TITLE
   const latestMusicArtwork = latestMusic?.image
-  const [teaserHeight, setTeaserHeight] = useState(112)
   const [expandedOffsetY, setExpandedOffsetY] = useState(0)
-  const teaserRef = useRef<HTMLDivElement>(null)
   const readMoreButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -270,45 +252,26 @@ export default function Page() {
     }
   }, [])
 
-  useEffect(() => {
-    const teaser = teaserRef.current
-
-    if (!teaser) {
-      return
-    }
-
-    const updateTeaserHeight = () => {
-      setTeaserHeight(teaser.getBoundingClientRect().height)
-    }
-
-    updateTeaserHeight()
-
-    const observer = new ResizeObserver(updateTeaserHeight)
-    observer.observe(teaser)
-
-    return () => observer.disconnect()
-  }, [])
-
   const entranceInitial = playIntro || arriving ? "hidden" : false
   const entranceAnimate = isRevealed ? "visible" : "hidden"
   // Arriving, the copy waits for the paper to have mostly drawn back, then
   // settles onto it: quicker and closer together than the intro's entrance.
-  const entranceTransition = (delay: number) =>
+  const copyTransition = (delay: number) =>
     playIntro
-      ? transition(delay)
+      ? entranceTransition(delay)
       : arriving && !prefersReducedMotion
         ? {
             duration: 0.55,
             delay: (ARRIVE_MS / 1000) * 0.8 + delay * 0.35,
-            ease,
+            ease: EASE,
           }
         : { duration: 0 }
   const railTransition = prefersReducedMotion
     ? { duration: 0 }
-    : { duration: 0.7, ease }
+    : { duration: 0.7, ease: EASE }
   const expandedContentTransition = prefersReducedMotion
     ? { duration: 0 }
-    : { duration: 0.41, delay: 0.14, ease }
+    : { duration: 0.41, delay: 0.14, ease: EASE }
 
   const getExpandedTopInset = () => {
     if (typeof window === "undefined") {
@@ -416,16 +379,11 @@ export default function Page() {
               <motion.div
                 data-paper-keep
                 className="relative h-24 w-24 overflow-hidden sm:h-26 sm:w-26 lg:absolute lg:top-1 lg:right-[calc(100%+1.5rem)]"
-                style={
-                  {
-                    "--portrait-size": `${teaserHeight}px`,
-                  } as CSSProperties
-                }
                 data-home-fallback
                 variants={fadeUp}
                 initial={entranceInitial}
                 animate={entranceAnimate}
-                transition={entranceTransition(0)}
+                transition={copyTransition(0)}
               >
                 <Image
                   src="/paolo-portrait.jpeg"
@@ -436,17 +394,14 @@ export default function Page() {
                   priority
                 />
               </motion.div>
-              <div
-                ref={teaserRef}
-                className="flex flex-col gap-2 leading-relaxed"
-              >
+              <div className="flex flex-col gap-2 leading-relaxed">
                 <motion.h1
                   className="flex items-center gap-1.5"
                   data-home-fallback
                   variants={fadeUp}
                   initial={entranceInitial}
                   animate={entranceAnimate}
-                  transition={entranceTransition(0)}
+                  transition={copyTransition(0)}
                 >
                   <span className="font-medium">
                     <span className="text-muted-foreground">
@@ -461,7 +416,7 @@ export default function Page() {
                   variants={fadeUp}
                   initial={entranceInitial}
                   animate={entranceAnimate}
-                  transition={entranceTransition(0.15)}
+                  transition={copyTransition(0.15)}
                 >
                   I&apos;m a 19 y/o{" "}
                   <a
@@ -497,7 +452,7 @@ export default function Page() {
                   variants={fadeUp}
                   initial={entranceInitial}
                   animate={entranceAnimate}
-                  transition={entranceTransition(0.28)}
+                  transition={copyTransition(0.28)}
                 >
                   Currently, I&apos;m doing research at{" "}
                   <a
@@ -566,7 +521,7 @@ export default function Page() {
                 variants={fadeUp}
                 initial={entranceInitial}
                 animate={entranceAnimate}
-                transition={entranceTransition(0.52)}
+                transition={copyTransition(0.52)}
               >
                 <span>You can check out my </span>
                 <a
@@ -632,7 +587,7 @@ export default function Page() {
                   variants={fadeUp}
                   initial={entranceInitial}
                   animate={entranceAnimate}
-                  transition={entranceTransition(0.59)}
+                  transition={copyTransition(0.59)}
                   onClick={handleExpandedToggle}
                 >
                   <span className="underline decoration-current decoration-1 underline-offset-3">
@@ -646,7 +601,7 @@ export default function Page() {
                         initial={{ y: 10, opacity: 0, filter: "blur(4px)" }}
                         animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
                         exit={{ y: -10, opacity: 0, filter: "blur(4px)" }}
-                        transition={{ duration: 0.18, ease }}
+                        transition={{ duration: 0.18, ease: EASE }}
                       >
                         {isExpanded ? "less" : "more"}
                       </motion.span>

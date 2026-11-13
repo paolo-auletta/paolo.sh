@@ -1,12 +1,16 @@
 import { ActivityArchivePage } from "@/components/activity-archive-page"
+import {
+  PinnedAlbumCards,
+  SongActivityRows,
+} from "@/components/music/music-activity"
 import { pageMetadata } from "@/lib/metadata"
-import { getLatestMusicRecap, getLatestRawMusicRecap } from "@/lib/music"
+import { getLatestMusicRecap, latestMusicRecap } from "@/lib/music"
 
 export const fetchCache = "force-cache"
 export const revalidate = false
 
 export function generateMetadata() {
-  const { monthLabel } = getLatestRawMusicRecap()
+  const { monthLabel } = latestMusicRecap
   return pageMetadata({
     title: "Music",
     description: `The albums and songs I played most in ${monthLabel}.`,
@@ -21,7 +25,8 @@ export default async function MusicPage() {
     <ActivityArchivePage
       title="Music"
       monthLabel={musicRecap.monthLabel}
-      musicRecap={musicRecap}
+      pinned={<PinnedAlbumCards albums={musicRecap.albums.slice(0, 4)} />}
+      rows={<SongActivityRows songs={musicRecap.songs.slice(0, 5)} />}
       viewAllHref="/music/all"
     />
   )

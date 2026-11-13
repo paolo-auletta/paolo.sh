@@ -1,25 +1,14 @@
 "use client"
 
 import { EyeOff } from "lucide-react"
-import { motion } from "motion/react"
+import { motion, type Variants } from "motion/react"
 import Link from "next/link"
 
 import { MUTED_RULE, MuteFeed } from "@/components/mute-feed"
-import { usePageEntranceAnimation } from "@/components/use-page-entrance-animation"
+import { entranceTransition, fadeUp } from "@/components/motion/entrance"
 import { Button } from "@/components/ui/button"
 
-const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 18, filter: "blur(12px)" },
-  visible: { opacity: 1, y: 0, filter: "blur(0px)" },
-}
-
-const transition = (delay: number) => ({
-  duration: 0.95,
-  delay: delay * 0.82,
-  ease,
-})
+import { useFirstVisit } from "./use-first-visit"
 
 /*
  * The demo block gets the entrance without the blur: Motion leaves
@@ -48,23 +37,13 @@ function GithubMark({ className }: { className?: string }) {
 const externalLinkProps = { target: "_blank", rel: "noreferrer" } as const
 
 export default function MutePage() {
-  const shouldAnimatePageEntrance = usePageEntranceAnimation("mute")
-  const entranceInitial = shouldAnimatePageEntrance ? "hidden" : false
-  const entranceTransition = (delay: number) =>
-    shouldAnimatePageEntrance ? transition(delay) : { duration: 0 }
+  const animate = useFirstVisit("mute")
 
-  const entrance = (delay: number) => ({
-    variants: fadeUp,
-    initial: entranceInitial,
+  const entrance = (delay: number, variants: Variants = fadeUp) => ({
+    variants,
+    initial: animate ? ("hidden" as const) : false,
     animate: "visible" as const,
-    transition: entranceTransition(delay),
-  })
-
-  const entrancePlain = (delay: number) => ({
-    variants: fadeUpPlain,
-    initial: entranceInitial,
-    animate: "visible" as const,
-    transition: entranceTransition(delay),
+    transition: animate ? entranceTransition(delay) : { duration: 0 },
   })
 
   return (
@@ -86,7 +65,7 @@ export default function MutePage() {
               </motion.p>
             </div>
 
-            <motion.div className="flex flex-col gap-4" {...entrancePlain(0.3)}>
+            <motion.div className="flex flex-col gap-4" {...entrance(0.3, fadeUpPlain)}>
               <MuteFeed />
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-2 text-sm">
                 <span className="text-muted-foreground">Your rule</span>

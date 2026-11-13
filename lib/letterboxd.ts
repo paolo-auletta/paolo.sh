@@ -8,12 +8,14 @@ export type LetterboxdMovie = {
   releaseDate: string
   review?: string
   title: string
-  tmdbId?: string
   watchedDate: string
 }
 
 const LETTERBOXD_RSS_URL = "https://letterboxd.com/paoloauletta/rss/"
 export const LETTERBOXD_PROFILE_URL = "https://letterboxd.com/paoloauletta/"
+
+/** The film named when the diary can't be read. */
+export const FALLBACK_MOVIE_TITLE = "Obsession"
 
 const ONE_HOUR = 60 * 60
 
@@ -122,7 +124,6 @@ function parseMovieItem(itemXml: string): LetterboxdMovie | undefined {
     releaseDate: getTagValue(itemXml, "letterboxd:filmYear") ?? "",
     review: getReview(description),
     title,
-    tmdbId: getTagValue(itemXml, "tmdb:movieId"),
     watchedDate,
   }
 }

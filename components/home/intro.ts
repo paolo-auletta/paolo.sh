@@ -10,7 +10,7 @@ import { useEffect, useState, useSyncExternalStore } from "react"
  * visitor is on a slow connection: skip the intro and settle straight into
  * the final scene. Keep it below the CSS fallback delay in globals.css.
  */
-export const LATE_MOUNT_MS = 2200
+const LATE_MOUNT_MS = 2200
 /** Longest an intro waits for its painting before starting anyway. */
 export const WORLD_WAIT_MS = 1500
 
@@ -32,7 +32,7 @@ export function useHomeIntro() {
   return playIntro
 }
 
-export type HomeTheme = "light" | "dark"
+type HomeTheme = "light" | "dark"
 
 /** The theme the page loaded in: the one whose intro plays. */
 let loadedTheme: HomeTheme | null = null

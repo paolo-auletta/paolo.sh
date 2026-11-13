@@ -11,12 +11,14 @@
  */
 
 import {
+  cellWindow,
+  len3,
   sdCapsule,
   sdEllipsoid,
   sdRoundCone,
   type CellCallback,
-  type PlaneRaster,
-} from "@/components/home/ascii-plane"
+  type CellRaster,
+} from "@/components/home/ascii-sdf"
 
 export type GiantPose = {
   /** Where the head points on screen. 0 = right, +π/2 = up. */
@@ -87,10 +89,6 @@ function setLimbs(flutter: number) {
 }
 
 let hitMaterial = MAT_STEEL
-
-function len3(x: number, y: number, z: number) {
-  return Math.sqrt(x * x + y * y + z * z)
-}
 
 function map(x: number, y: number, z: number) {
   // Chest: a barrel, wide at the shoulders, tapering to the waist. The squash
@@ -233,12 +231,12 @@ const BOX_MIN = [-1.02, -0.3, -0.68]
 const BOX_MAX = [1.02, 0.3, 0.68]
 
 /**
- * Rasterizes the Giant. `onCell` is called once per covered cell, in no
- * particular order. Returns the number of covered cells.
+ * Rasterizes the Giant, all in one glyph: he is shaded by color alone.
+ * `onCell` is called once per covered cell, in no particular order.
  */
 export function rasterizeGiant(
   pose: GiantPose,
-  raster: PlaneRaster,
+  raster: CellRaster,
   onCell: CellCallback
 ) {
   setLimbs(pose.flutter)
@@ -257,22 +255,11 @@ export function rasterizeGiant(
   const lz = m[2] * lvx + m[5] * lvy + m[8] * lvz
 
   const { originX, originY, scale, cellWidth, cellHeight } = raster
-  const glyph = (raster.ramp ?? "#").charCodeAt(0)
-  const reach = 1.25 * scale
-  const col0 = Math.max(0, Math.floor((originX - reach) / cellWidth))
-  const col1 = Math.min(
-    Math.ceil(raster.viewWidth / cellWidth),
-    Math.ceil((originX + reach) / cellWidth)
-  )
-  const row0 = Math.max(0, Math.floor((originY - reach) / cellHeight))
-  const row1 = Math.min(
-    Math.ceil(raster.viewHeight / cellHeight),
-    Math.ceil((originY + reach) / cellHeight)
-  )
+  const { col0, col1, row0, row1 } = cellWindow(raster, 1.25 * scale)
   const cols = Math.max(0, col1 - col0)
   const rows = Math.max(0, row1 - row0)
   const size = cols * rows
-  if (!size) return 0
+  if (!size) return
   if (colorBuffer.length < size) colorBuffer = new Int32Array(size * 2)
   colorBuffer.fill(-1, 0, size)
 
@@ -403,7 +390,6 @@ export function rasterizeGiant(
     }
   }
 
-  let covered = 0
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const color = colorBuffer[r * cols + c]
@@ -416,11 +402,9 @@ export function rasterizeGiant(
         }
       }
       if (neighbors < 3) continue
-      onCell(c + col0, r + row0, String.fromCharCode(glyph), color)
-      covered++
+      onCell(c + col0, r + row0, "#", color)
     }
   }
-  return covered
 }
 
 let colorBuffer = new Int32Array(0)

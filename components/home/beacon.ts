@@ -1,4 +1,11 @@
-import { link } from "@/components/home/paper"
+import {
+  bindFullScreenQuad,
+  GLSL_HASH,
+  link,
+  QUAD_VERTEX,
+  sizeCanvas,
+  uniformsOf,
+} from "@/components/home/gl"
 
 /**
  * The Giant's eyes as searchlights. A beam from each eye to a point on the
@@ -16,13 +23,6 @@ import { link } from "@/components/home/paper"
  * Everything is worked out in the painting's own pixels, unprojected with a
  * simple pinhole camera, so it holds at any screen size.
  */
-
-const VERTEX = `
-attribute vec2 aPosition;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-}
-`
 
 const FRAGMENT = `
 precision highp float;
@@ -72,11 +72,7 @@ vec3 place(vec2 q, float z) {
   return vec3((q - CENTER) / FOCAL * z, z);
 }
 
-float hash(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
+${GLSL_HASH}
 
 // How much of one beam a point gets: a soft-edged cone from the eye along
 // the beam, gone past its end (x: fully there until, y: gone by).
@@ -215,7 +211,7 @@ const SKY = 30
 /** Depth from nearness, as in the shader. */
 const depthOf = (near: number) => 1 / (1 / SKY + (1 - 1 / SKY) * near)
 
-export type BeaconFrame = {
+type BeaconFrame = {
   width: number
   height: number
   /** The painting's resting part on screen. */
@@ -228,7 +224,7 @@ export type BeaconFrame = {
   color: [number, number, number]
 }
 
-export type BeaconRenderer = {
+type BeaconRenderer = {
   render: (frame: BeaconFrame) => void
   resize: (width: number, height: number, pixelRatio: number) => void
   /** True once the painting and its depth are in. */
@@ -249,37 +245,26 @@ export function createBeaconRenderer(
     preserveDrawingBuffer: false,
   })
   if (!gl) return null
-  const program = link(gl, VERTEX, FRAGMENT)
+  const program = link(gl, QUAD_VERTEX, FRAGMENT)
   if (!program) return null
 
-  const buffer = gl.createBuffer()
-  gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]),
-    gl.STATIC_DRAW
-  )
-  const position = gl.getAttribLocation(program, "aPosition")
-  gl.enableVertexAttribArray(position)
-  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
-  gl.useProgram(program)
+  const buffer = bindFullScreenQuad(gl, program)
 
-  const uniform = (name: string) => gl.getUniformLocation(program, name)
-  const u = {
-    resolution: uniform("uResolution"),
-    pixelRatio: uniform("uPixelRatio"),
-    photo: uniform("uPhoto"),
-    albedo: uniform("uAlbedo"),
-    mattes: uniform("uMattes"),
-    eyeL: uniform("uEyeL"),
-    eyeR: uniform("uEyeR"),
-    eyeDepth: uniform("uEyeDepth"),
-    end: uniform("uEnd"),
-    endDepth: uniform("uEndDepth"),
-    hit: uniform("uHit"),
-    power: uniform("uPower"),
-    light: uniform("uLight"),
-  }
+  const u = uniformsOf(gl, program, {
+    resolution: "uResolution",
+    pixelRatio: "uPixelRatio",
+    photo: "uPhoto",
+    albedo: "uAlbedo",
+    mattes: "uMattes",
+    eyeL: "uEyeL",
+    eyeR: "uEyeR",
+    eyeDepth: "uEyeDepth",
+    end: "uEnd",
+    endDepth: "uEndDepth",
+    hit: "uHit",
+    power: "uPower",
+    light: "uLight",
+  })
   gl.uniform1i(u.albedo, 0)
   gl.uniform1i(u.mattes, 1)
 
@@ -460,9 +445,7 @@ export function createBeaconRenderer(
     ready: () => pending === 0,
     resize(width, height, ratio) {
       pixelRatio = ratio
-      canvas.width = Math.round(width * ratio)
-      canvas.height = Math.round(height * ratio)
-      gl.viewport(0, 0, canvas.width, canvas.height)
+      sizeCanvas(gl, canvas, width, height, ratio)
       blank = false
     },
     render({ width, height, photo, eyes, aim, power, color }) {
