@@ -3,6 +3,7 @@ import { Caveat, Geist, Geist_Mono, Libre_Baskerville } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 
 import "./globals.css"
+import { NavigationHistory } from "@/components/navigation-history"
 import { PagePrefetcher } from "@/components/page-prefetcher"
 import { PageTransitions } from "@/components/page-transition"
 import { ThemeProvider } from "@/components/theme-provider"
@@ -69,6 +70,7 @@ export default function RootLayout({
           {children}
           <PagePrefetcher hrefs={pagePrefetchHrefs} />
           <PageTransitions />
+          <NavigationHistory />
         </ThemeProvider>
       </body>
     </html>

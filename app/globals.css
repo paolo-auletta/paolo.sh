@@ -166,6 +166,53 @@ html:not([data-home-ready]) [data-home-fallback] {
 }
 
 /*
+ * Ink (components/ink.tsx): words held in the copy's grey through the
+ * entrance, then inked back to their own colour letter by letter. With no
+ * `to`, each letter lands on whatever colour it already has, so the sky
+ * gradient's transparent text lets the gradient through. Without the
+ * script, the words simply keep their colour.
+ */
+@keyframes ink-in {
+  from {
+    color: var(--muted-foreground);
+  }
+}
+
+html:not([data-home-ready]) [data-home-copy] [data-ink],
+[data-entrance-pending] [data-ink] {
+  color: inherit !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ink] {
+    color: inherit !important;
+    animation: none !important;
+  }
+}
+
+/*
+ * The research page's entrance (components/research-copy.tsx), the same
+ * blur and rise as the homepage's. Server-rendered hidden, handed to the
+ * script before its first paint, revealed on its own if it never runs.
+ */
+[data-entrance-pending] [data-entrance] {
+  opacity: 0;
+  animation: home-fallback-reveal 0.6s ease-out 2.4s forwards;
+}
+
+/*
+ * Paper (components/motion/paper.ts) deals the Music and Movies pages in.
+ * They are server-rendered hidden so nothing shows before the deal; the
+ * script hands them over before its first paint. If it never runs, the
+ * page comes in on its own, like the homepage's fallback.
+ */
+[data-paper-pending] [data-paper]:not([data-paper~="card"]) {
+  opacity: 0;
+  animation: home-fallback-reveal 0.6s ease-out 2.4s forwards;
+}
+
+/*
  * Radix copies the card's z-index onto its portal wrapper, but our z-50 lands
  * on the inner link, leaving the wrapper at auto: under the homepage copy.
  */

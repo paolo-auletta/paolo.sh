@@ -21,6 +21,7 @@ import {
 import { GiantNight } from "@/components/home/giant-night"
 import { readTheme, useHomeIntro, useHomeTheme } from "@/components/home/intro"
 import { SkyScene } from "@/components/home/sky-scene"
+import { Ink, inkLength, type InkMode } from "@/components/ink"
 import { ARRIVE_MS, arriveHome } from "@/components/page-transition"
 
 const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
@@ -35,6 +36,23 @@ const transition = (delay: number) => ({
   delay: delay * 0.82,
   ease,
 })
+
+/**
+ * After the intro's entrance settles, the sentence's own hierarchy inks in:
+ * "AI research" first, then, more quietly, the two fields it names.
+ */
+const ACCENT = "AI research"
+const FIRST_FIELD = "mechanistic interpretability"
+const SECOND_FIELD = "automated research"
+const FOCUS_INK = { step: 22, duration: 320 }
+
+/** ms after the reveal: the accent's paragraph has risen and cleared. */
+const inkAt = (() => {
+  const accent = transition(0.15).delay * 1000 + 820
+  const first = accent + inkLength(ACCENT) - 200
+  const second = first + inkLength(FIRST_FIELD, FOCUS_INK) - 300
+  return { accent, first, second }
+})()
 
 const externalLinkProps = {
   target: "_blank",
@@ -223,6 +241,10 @@ export default function Page() {
   })
   const [isRevealed, setIsRevealed] = useState(!playIntro)
   const prefersReducedMotion = useReducedMotion() ?? false
+  // Only the intro's entrance is followed by the ink; coming back home, the
+  // copy is already as it was left. (Reduced motion is handled in CSS, so
+  // the server and the first client render always agree.)
+  const inkMode: InkMode = !playIntro ? "settled" : isRevealed ? "play" : "hold"
   const [isExpanded, setIsExpanded] = useState(false)
   const [latestMovie, setLatestMovie] = useState(() => latest.movie)
   const [latestMusic, setLatestMusic] = useState(() => latest.music)
@@ -449,14 +471,23 @@ export default function Page() {
                     student
                   </a>{" "}
                   who cares about craft and detail. Now I&apos;m bringing that
-                  to <span className={skyAccentClassName}>AI research</span>,
-                  especially{" "}
+                  to{" "}
+                  <span className={skyAccentClassName}>
+                    <Ink mode={inkMode} delay={inkAt.accent}>
+                      {ACCENT}
+                    </Ink>
+                  </span>
+                  , especially{" "}
                   <span className="whitespace-nowrap text-foreground">
-                    mechanistic interpretability
+                    <Ink mode={inkMode} delay={inkAt.first} {...FOCUS_INK}>
+                      {FIRST_FIELD}
+                    </Ink>
                   </span>{" "}
                   and{" "}
                   <span className="whitespace-nowrap text-foreground">
-                    automated research
+                    <Ink mode={inkMode} delay={inkAt.second} {...FOCUS_INK}>
+                      {SECOND_FIELD}
+                    </Ink>
                   </span>
                   .
                 </motion.p>

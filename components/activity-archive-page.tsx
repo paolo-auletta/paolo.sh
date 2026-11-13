@@ -1,9 +1,13 @@
 "use client"
 
 import { Dot, Heart, Star } from "lucide-react"
-import { motion, useReducedMotion } from "motion/react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRef, useState, type ReactNode } from "react"
+
+import { paper } from "@/components/motion/paper"
+import { useEntrance } from "@/components/motion/use-entrance"
+import { previousPathname } from "@/components/navigation-history"
 
 import { type LetterboxdMovie } from "@/lib/letterboxd"
 import { type MusicAlbum, type MusicRecap, type MusicSong } from "@/lib/music"
@@ -15,8 +19,6 @@ type ActivityArchivePageProps = {
   title: "Music" | "Movies"
   viewAllHref?: string
 }
-
-const ease = [0.22, 1, 0.36, 1] as [number, number, number, number]
 
 const fallbackMovieActivity: LetterboxdMovie[] = [
   {
@@ -189,37 +191,6 @@ const pinnedMovieActivity: LetterboxdMovie[] = [
   },
 ]
 
-function archiveTransition(delay: number, reducedMotion: boolean) {
-  return {
-    duration: reducedMotion ? 0 : 0.62,
-    delay: reducedMotion ? 0 : delay,
-    ease,
-  }
-}
-
-function archiveInitial(
-  reducedMotion: boolean,
-  options: { blur?: number; x?: number; y?: number } = {}
-) {
-  if (reducedMotion) {
-    return { opacity: 1, x: 0, y: 0, filter: "blur(0px)" }
-  }
-
-  return {
-    opacity: 0,
-    x: options.x ?? 0,
-    y: options.y ?? 14,
-    filter: `blur(${options.blur ?? 10}px)`,
-  }
-}
-
-const archiveVisible = {
-  opacity: 1,
-  x: 0,
-  y: 0,
-  filter: "blur(0px)",
-}
-
 function ActivityArtwork({
   posterUrl,
   title,
@@ -282,6 +253,7 @@ function PinnedArtwork({
   return (
     <div
       aria-label={title}
+      data-paper="cover"
       className={`relative overflow-hidden border border-border/70 shadow-sm ${
         variant === "poster" ? "aspect-[2/3]" : "aspect-square"
       }`}
@@ -307,29 +279,21 @@ function PinnedArtwork({
 function PinnedActivityGrid({
   albums,
   isMusic,
-  reducedMotion,
 }: {
   albums: MusicAlbum[]
   isMusic: boolean
-  reducedMotion: boolean
 }) {
   if (isMusic) {
     return (
       <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-        {albums.map((item, index) => (
-          <motion.div
-            key={item.title}
-            className="min-w-0"
-            initial={archiveInitial(reducedMotion, { blur: 8, y: 8 })}
-            animate={archiveVisible}
-            transition={archiveTransition(0.1 + index * 0.07, reducedMotion)}
-          >
+        {albums.map((item) => (
+          <div key={item.title} data-paper="card" className="min-w-0">
             <PinnedArtwork
               posterUrl={item.artworkUrl}
               title={item.title}
               variant="cover"
             />
-            <div className="mt-2 min-w-0">
+            <div data-paper="caption" className="mt-2 min-w-0">
               <h3 className="truncate text-sm font-medium text-foreground">
                 {item.title}
               </h3>
@@ -341,7 +305,7 @@ function PinnedActivityGrid({
                 </span>
               </p>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
     )
@@ -349,23 +313,21 @@ function PinnedActivityGrid({
 
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-4">
-      {pinnedMovieActivity.map((item, index) => (
-        <motion.a
+      {pinnedMovieActivity.map((item) => (
+        <a
           key={item.title}
           href={item.link}
           target="_blank"
           rel="noreferrer"
+          data-paper="card"
           className="group min-w-0"
-          initial={archiveInitial(reducedMotion, { blur: 8, y: 8 })}
-          animate={archiveVisible}
-          transition={archiveTransition(0.1 + index * 0.07, reducedMotion)}
         >
           <PinnedArtwork
             posterUrl={item.posterUrl}
             title={item.title}
             variant="poster"
           />
-          <div className="mt-2 min-w-0">
+          <div data-paper="caption" className="mt-2 min-w-0">
             <h3 className="truncate text-sm font-medium text-foreground underline decoration-transparent decoration-1 underline-offset-3 transition-colors group-hover:decoration-muted-foreground/40">
               {item.title}
             </h3>
@@ -373,7 +335,7 @@ function PinnedActivityGrid({
               {item.director ?? item.releaseDate}
             </p>
           </div>
-        </motion.a>
+        </a>
       ))}
     </div>
   )
@@ -404,23 +366,33 @@ function RatingStars({ rating }: { rating: number }) {
   )
 }
 
-function MovieActivityList({
-  movies,
-  reducedMotion,
-}: {
-  movies: LetterboxdMovie[]
-  reducedMotion: boolean
-}) {
+/**
+ * The list as one sheet of paper: its top and bottom rules are their own
+ * elements so Paper can lay them down separately from the rows.
+ */
+function ActivitySheet({ children }: { children: ReactNode }) {
   return (
-    <ul className="flex flex-col border-y border-border/70">
+    <div className="relative">
+      <span
+        aria-hidden="true"
+        data-paper="rule"
+        className="absolute inset-x-0 top-0 h-px bg-border/70"
+      />
+      <ul className="flex flex-col py-px">{children}</ul>
+      <span
+        aria-hidden="true"
+        data-paper="rule"
+        className="absolute inset-x-0 bottom-0 h-px bg-border/70"
+      />
+    </div>
+  )
+}
+
+function MovieActivityList({ movies }: { movies: LetterboxdMovie[] }) {
+  return (
+    <ActivitySheet>
       {movies.map((movie, index) => (
-        <motion.li
-          key={movie.title}
-          className="group relative"
-          initial={archiveInitial(reducedMotion, { blur: 4, y: 8 })}
-          animate={archiveVisible}
-          transition={archiveTransition(0.54 + index * 0.045, reducedMotion)}
-        >
+        <li key={movie.title} data-paper="row" className="group relative">
           {index < movies.length - 1 ? (
             <span
               aria-hidden="true"
@@ -468,9 +440,9 @@ function MovieActivityList({
               </div>
             </div>
           </a>
-        </motion.li>
+        </li>
       ))}
-    </ul>
+    </ActivitySheet>
   )
 }
 
@@ -482,22 +454,14 @@ function formatMinutes(minutes: number) {
   return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`
 }
 
-function MusicActivityList({
-  reducedMotion,
-  songs,
-}: {
-  reducedMotion: boolean
-  songs: MusicSong[]
-}) {
+function MusicActivityList({ songs }: { songs: MusicSong[] }) {
   return (
-    <ul className="flex flex-col border-y border-border/70">
+    <ActivitySheet>
       {songs.map((song, index) => (
-        <motion.li
+        <li
           key={song.title}
+          data-paper="row"
           className="relative grid grid-cols-[1.6rem_minmax(0,1fr)] gap-2 transition-colors hover:bg-muted/20 sm:grid-cols-[1.9rem_minmax(0,1fr)] sm:gap-2.5"
-          initial={archiveInitial(reducedMotion, { blur: 4, y: 8 })}
-          animate={archiveVisible}
-          transition={archiveTransition(0.54 + index * 0.045, reducedMotion)}
         >
           {index < songs.length - 1 ? (
             <span
@@ -526,9 +490,9 @@ function MusicActivityList({
               {formatStreams(song.streams)}
             </p>
           </div>
-        </motion.li>
+        </li>
       ))}
-    </ul>
+    </ActivitySheet>
   )
 }
 
@@ -609,14 +573,27 @@ export function ActivityArchivePage({
   const movieItems = movies.length > 0 ? movies : fallbackMovieActivity
   const albumItems = musicRecap.albums.slice(0, 4)
   const songItems = musicRecap.songs.slice(0, 5)
-  const reducedMotion = useReducedMotion() ?? false
-  const listLength = isMusic ? songItems.length : movieItems.length
   const isExternalViewAll = viewAllHref?.startsWith("http")
   const footerLinkClassName =
     "w-fit text-sm font-medium text-muted-foreground underline decoration-muted-foreground/35 decoration-1 underline-offset-3 transition-colors hover:text-foreground hover:decoration-foreground/50"
-  const footerTransition = archiveTransition(
-    0.56 + listLength * 0.045,
-    reducedMotion
+  const sheetRef = useRef<HTMLDivElement>(null)
+
+  // Paper: the covers are dealt onto the table and the list unfolds. Only
+  // when the page is entered, from the homepage or as the first page of a
+  // visit; coming back from within the section (the monthly archive, say),
+  // everything is already on the table. Read once, while the page renders.
+  const [deal] = useState(() => {
+    const from = previousPathname()
+    return from === null || from === "/"
+  })
+  useEntrance(
+    sheetRef,
+    {
+      pending: "paperPending",
+      probe: '[data-paper~="title"]',
+      enabled: deal,
+    },
+    paper
   )
 
   return (
@@ -635,28 +612,24 @@ export function ActivityArchivePage({
               >
                 <HomePagePositionAnchor />
               </div>
-              <div className="flex flex-col gap-8 sm:absolute sm:inset-x-0 sm:top-0 sm:pb-16">
+              <div
+                ref={sheetRef}
+                data-paper-pending={deal ? "" : undefined}
+                className="flex flex-col gap-8 sm:absolute sm:inset-x-0 sm:top-0 sm:pb-16"
+              >
                 <div className="flex flex-col gap-3">
-                  <motion.h1
+                  <h1
+                    data-paper="title"
                     className="text-xl font-medium text-foreground"
-                    initial={archiveInitial(reducedMotion)}
-                    animate={archiveVisible}
-                    transition={archiveTransition(0, reducedMotion)}
                   >
                     {title}
-                  </motion.h1>
-                  <PinnedActivityGrid
-                    albums={albumItems}
-                    isMusic={isMusic}
-                    reducedMotion={reducedMotion}
-                  />
+                  </h1>
+                  <PinnedActivityGrid albums={albumItems} isMusic={isMusic} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <motion.div
+                  <div
+                    data-paper="head"
                     className="flex items-baseline justify-between gap-4"
-                    initial={archiveInitial(reducedMotion)}
-                    animate={archiveVisible}
-                    transition={archiveTransition(0.43, reducedMotion)}
                   >
                     <h2 className="font-medium text-foreground">
                       Recent Activity
@@ -664,27 +637,16 @@ export function ActivityArchivePage({
                     <p className="text-sm text-muted-foreground">
                       {monthLabel}
                     </p>
-                  </motion.div>
+                  </div>
                   <div className="flex flex-col gap-3">
                     {isMusic ? (
-                      <MusicActivityList
-                        reducedMotion={reducedMotion}
-                        songs={songItems}
-                      />
+                      <MusicActivityList songs={songItems} />
                     ) : (
-                      <MovieActivityList
-                        movies={movieItems}
-                        reducedMotion={reducedMotion}
-                      />
+                      <MovieActivityList movies={movieItems} />
                     )}
-                    <motion.div
+                    <div
+                      data-paper="footer"
                       className="flex items-center justify-between gap-4"
-                      initial={archiveInitial(reducedMotion, {
-                        blur: 4,
-                        y: 8,
-                      })}
-                      animate={archiveVisible}
-                      transition={footerTransition}
                     >
                       <Link
                         className={`${footerLinkClassName} cursor-pointer`}
@@ -710,7 +672,7 @@ export function ActivityArchivePage({
                           View all
                         </Link>
                       ) : null}
-                    </motion.div>
+                    </div>
                   </div>
                 </div>
               </div>
