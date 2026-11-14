@@ -1,6 +1,6 @@
 /*
  * The WebGL behind every surface that polishes under the cursor: the album's
- * reliefs (relief-canvas.tsx) and Miky's coin (app/miky/coin.tsx).
+ * reliefs (relief-canvas.tsx) and Miky's coin (app/(athens)/miky/coin.tsx).
  *
  * The cursor paints into a small "wetness" buffer that slowly dries up. Each
  * surface brings its own shading pass, which reads that wetness and draws

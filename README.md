@@ -20,10 +20,11 @@ In dev, `/?t=<seconds>` freezes the homepage intro at that moment.
 | `components/home/` | The homepage scenes: the day sky with the ASCII seaplane (`sky-scene.tsx`, `flight.ts`, `ascii-plane.ts`) and the night with the Giant (`giant-night.tsx`, `night/`, `ascii-giant.ts`, `beacon.ts`) |
 | `components/motion/` | Shared motion: the copy entrance, the Paper entrance for Music/Movies |
 | `app/music`, `app/movies`, `lib/music/`, `lib/letterboxd.ts` | Monthly listening recaps (hand-entered, artwork from Deezer/iTunes) and the Letterboxd diary |
-| `app/album`, `components/album/` | The album page and its WebGL plaster reliefs |
-| `app/miky` | The Miky page and its coin |
+| `app/(athens)/album`, `components/album/` | The album page and its WebGL plaster reliefs |
+| `app/(athens)/miky` | The Miky page and its coin |
 | `app/mute` | The mute browser extension's page |
 | `lib/metadata.ts` | Titles, descriptions and link previews |
+| `app/not-found.tsx`, `components/not-found/` | The 404: the opening dream of 8½, dithered live, with the leg swinging on its rope |
 
 ## Generated assets
 
@@ -32,3 +33,4 @@ These are baked offline and committed under `public/`:
 - `scripts/og/build.sh [day|night|all]`: the animated link previews in `public/og/`, rendered from the homepage's own code. Needs bun, ffmpeg and Python with Pillow.
 - `scripts/album-relief/generate.py`: the album's relief textures. Needs Python with numpy, scipy, Pillow (and rembg once).
 - `scripts/miky-coin/bake.py`: the Miky coin's textures, built on the album generator.
+- `scripts/404/bake.py`: the 404's layers in `public/404/` (the beach, the leg cut out, a blue-noise map), from one frame of 8½. Needs Python with numpy and opencv-python.

@@ -205,14 +205,14 @@
   }
 
   /* Portraits are unveiled like the album's reliefs. */
-  .l2.motion-ready .unveil > .mk-duo {
+  .l2-main.motion-ready .unveil > .mk-duo {
     transition:
       clip-path 1500ms var(--ease),
       opacity 1000ms ease,
       --mk-r 1400ms var(--ease);
   }
 
-  .l2.motion-ready .unveil:not(.is-revealed) > .mk-duo {
+  .l2-main.motion-ready .unveil:not(.is-revealed) > .mk-duo {
     clip-path: inset(12% 0 12% 0);
     opacity: 0;
     transition: none;
@@ -304,4 +304,48 @@
   height: 100%;
   border-radius: 50%;
   pointer-events: none;
+}
+
+/* ───────────────────────── the record ───────────────────────── */
+
+/* The album's cover and facts, as on /album; both lead back to it. */
+.athens .mk-record-cover {
+  display: block;
+  text-decoration: none;
+}
+
+.athens .mk-record-cover:focus-visible {
+  outline: 1px solid var(--blue);
+  outline-offset: -8px;
+}
+
+.mk-record {
+  display: grid;
+  place-items: center;
+}
+
+.athens .mk-record-link {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 28px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.mk-record-link svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mk-record-link:hover svg {
+  transform: translateX(3px);
+}
+
+@media (max-width: 809px) {
+  .athens .mk-record-link {
+    margin-top: 18px;
+  }
 }
