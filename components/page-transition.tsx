@@ -51,6 +51,8 @@ function internalTarget(event: MouseEvent) {
   const anchor =
     event.target instanceof Element ? event.target.closest("a[href]") : null
   if (!(anchor instanceof HTMLAnchorElement)) return null
+  // A link that plays its own way out (the 404's fall) navigates itself.
+  if (anchor.hasAttribute("data-own-transition")) return null
   if (anchor.target && anchor.target !== "_self") return null
   if (anchor.hasAttribute("download")) return null
   const url = new URL(anchor.href, location.href)

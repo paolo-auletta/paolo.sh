@@ -32,6 +32,15 @@ export function useHomeIntro() {
   return playIntro
 }
 
+/**
+ * For a page that hands the visitor straight to the homepage's paper (the
+ * 404, whose fall ends on bare page): the homepage arrives as if from
+ * another page of the visit, even on the visit's first page.
+ */
+export function skipHomeIntro() {
+  introPlayed = true
+}
+
 type HomeTheme = "light" | "dark"
 
 /** The theme the page loaded in: the one whose intro plays. */
