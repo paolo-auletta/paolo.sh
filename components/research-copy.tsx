@@ -48,6 +48,7 @@ export function ResearchCopy() {
     <div
       ref={ref}
       data-entrance-pending=""
+      data-life-clear=""
       className="mx-auto flex max-w-xl flex-col gap-8 text-base"
     >
       <div className="flex flex-col gap-3 leading-relaxed">

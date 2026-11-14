@@ -56,6 +56,16 @@ export const DownloadGlyph = (p: IconProps) => (
 /** A short hairline between two facts, in place of a middle dot. */
 export const Sep = () => <span className="sep" aria-hidden />
 
+/** One line of a facts card: a lettered label and its value. */
+export function Fact({ i, label, value }: { i: number; label: string; value: string }) {
+  return (
+    <div className="fact-row rise" style={{ "--i": i } as CSSProperties}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
+    </div>
+  )
+}
+
 /* ───────────────────────── meander rule ───────────────────────── */
 
 /**

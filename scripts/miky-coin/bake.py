@@ -14,7 +14,7 @@ Out, in public/miky/coin/:
   shade.webp   the relief's own light and shade (grey), for the metal's form
   mask.webp    the coin's disc: where it turns to silver under the cursor
 
-The geometry must match app/miky/page.tsx: the field's inset (FACE_INSET)
+The geometry must match app/(athens)/miky/page.tsx: the field's inset (FACE_INSET)
 and the key's rim (COIN_KEYS, COIN_OUTER, COIN_STEP).
 
 Run with a Python that has numpy, scipy, pillow and rembg:
