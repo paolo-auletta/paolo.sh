@@ -30,6 +30,9 @@ const HAND = [644, 250] as const // the man on the beach holding it
 const BEND1 = [800, 432] as const
 const BEND2 = [675, 420] as const
 const KNEE = [1420, 980] as const // off-frame: the leg swings from here
+const SHOE_EDGE = 1080 // the shoe's far side, the right in the mirrored frame
+/** Frame px: how far in from the right edge the shoe sits, on a phone. */
+const PORTRAIT_MARGIN = 30
 
 /** The whole frame's grey range, leg included (printed by bake.py). */
 const LEVELS = [16, 202] as const
@@ -325,17 +328,23 @@ function place(
     w = Math.min(height * aspect, (width - handMin) / 0.38)
     x = width - w * 0.88
   } else {
-    // Tall enough to reach up under the copy, the hand just in from the left;
-    // the trouser runs off the right edge, as it does in the film.
-    const tall = (height - copy.bottom + height * 0.06) * aspect
-    w = Math.max(tall, width / 0.55)
-    x = Math.max(width * 0.12 - (w * HAND[0]) / FRAME.width, width - w)
+    // Across the screen, from just short of the hand to the far side of the
+    // shoe, so the whole leg shows; but in the room under the copy (give or
+    // take the fade), so the shoe, at the frame's top, isn't faded out.
+    const across =
+      (width * FRAME.width) / (SHOE_EDGE + PORTRAIT_MARGIN - (HAND[0] - 40))
+    w = Math.min(across, (height - copy.bottom) * 1.05 * aspect)
+    // The shoe just in from the right edge; the trouser runs off it, as it
+    // does in the film.
+    x = width - (w * (SHOE_EDGE + PORTRAIT_MARGIN)) / FRAME.width
   }
   const h = w / aspect
   const y = height - h
   if (y > 1) {
+    // In portrait the fade only softens the frame's top edge: the shoe is
+    // right under it.
     const from = Math.max(y, landscape ? 0 : copy.bottom + height * 0.02)
-    fadeY = [from, from + h * 0.22]
+    fadeY = [from, from + h * (landscape ? 0.22 : 0.08)]
   }
   const fade = ([a, b]: [number, number], v: number) =>
     b > a ? smoothstep(a, b, v) : 1
