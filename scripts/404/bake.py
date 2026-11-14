@@ -30,10 +30,16 @@ LEG_OUTLINE = [
     # the shoe's lit welt, as bright as the sand: traced, and kept as drawn
     (372, 0), (381, 25), (386, 50), (390, 90), (390, 120), (388, 150),
     (383, 180), (377, 200), (372, 220), (368, 235), (364, 250),
-    # the turn-up, the cuff, the trouser
+    # the turn-up and the cuff
     (366, 257), (394, 270), (410, 280), (417, 290), (421, 305), (422, 320),
-    (405, 395), (350, 440), (335, 455), (320, 500), (290, 570), (250, 640),
-    (222, 688), (0, 688), (0, 312), (90, 300), (175, 296), (206, 262),
+    (405, 395), (350, 440), (335, 455),
+    # the trouser's outer side, measured: where it rises above its own grey
+    (333, 460), (329, 472), (324, 484), (317, 496), (309, 508), (300, 520),
+    (288, 532), (275, 544), (271, 556), (267, 568), (264, 580), (258, 592),
+    (251, 604), (242, 616), (231, 628), (220, 640), (212, 652), (207, 664),
+    (201, 676), (196, 688),
+    # off the bottom, up the far side, and the top of the trouser
+    (0, 688), (0, 312), (90, 300), (175, 296), (206, 262),
     (211, 215), (215, 170), (222, 135), (233, 105),
 ]
 # Where the outline is kept as drawn: (x0, y0, x1, y1), and outward of x0.
@@ -77,13 +83,15 @@ def median_closed(values, width):
 
 def cut_leg(frame):
     """The leg's matte, 0–255, antialiased. The outline is walked a pixel at
-    a time, and each point moves along its normal to the steepest rise from
-    the dark leg to the bright sand (about 40 against 125, over ~8px). The
+    a time, and each point moves along its normal, by at most a few px, to
+    the steepest rise from the dark leg to the bright sand (about 40 against
+    125 at the shoe, 70 against 120 at the trouser, over ~8px). The
     moves are smoothed along the outline, so a grain of sand can't pull it
     off course. On the welt, which is as bright as the sand, there is no
     such rise, and the traced outline stands."""
     h, w = frame.shape
-    blur = cv2.GaussianBlur(frame.astype(np.float32), (0, 0), 1.2)
+    # Soft enough that the sand's specks don't outdo the leg's own edge.
+    blur = cv2.GaussianBlur(frame.astype(np.float32), (0, 0), 2)
 
     # The outline, a point per px, softened a little.
     closed = np.array(LEG_OUTLINE + LEG_OUTLINE[:1], np.float64)
@@ -101,7 +109,7 @@ def cut_leg(frame):
         normal = -normal  # outward
 
     # Each point's profile across the edge, and the steepest rise in it.
-    reach = np.arange(-12, 12.01, 0.25)
+    reach = np.arange(-6, 6.01, 0.25)
     xs = (base[:, None, 0] + normal[:, None, 0] * reach).astype(np.float32)
     ys = (base[:, None, 1] + normal[:, None, 1] * reach).astype(np.float32)
     profile = cv2.remap(blur, xs, ys, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
