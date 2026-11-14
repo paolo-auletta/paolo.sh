@@ -57,7 +57,7 @@ void main() {
   float grain =
     0.65 * (hash(floor(gl_FragCoord.xy / 1.5) + seed) - 0.5) +
     0.35 * (hash(floor(gl_FragCoord.xy / 3.0) + seed * 1.7) - 0.5);
-  float value = tone * flicker + grain * (0.12 + tone * (1.0 - tone) * 1.3);
+  float value = tone * flicker + grain * (0.07 + tone * (1.0 - tone) * 0.8);
   vec2 v = gl_FragCoord.xy / uResolution - vec2(0.6, 0.5);
   value *= 1.0 - 0.55 * dot(v, v);
   float a = clamp(value * ink.a, 0.0, 1.0) * uAlpha;
