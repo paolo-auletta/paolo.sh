@@ -33,4 +33,4 @@ These are baked offline and committed under `public/`:
 - `scripts/og/build.sh [day|night|all]`: the animated link previews in `public/og/`, rendered from the homepage's own code. Needs bun, ffmpeg and Python with Pillow.
 - `scripts/album-relief/generate.py`: the album's relief textures. Needs Python with numpy, scipy, Pillow (and rembg once).
 - `scripts/miky-coin/bake.py`: the Miky coin's textures, built on the album generator.
-- `scripts/404/bake.py`: the 404's layers in `public/404/` (the beach, the leg cut out, a blue-noise map), from one frame of 8½. Needs Python with numpy and opencv-python.
+- `scripts/404/bake.py`: the 404's layers in `public/404/` (the beach, and the leg cut out), from one frame of 8½. Needs Python with numpy and opencv-python.

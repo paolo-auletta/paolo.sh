@@ -30,7 +30,6 @@ export function NotFoundPage() {
   const beachRef = useRef<Beach | null>(null)
   const [falling, setFalling] = useState(false)
   const reduced = useReducedMotion()
-
   useEffect(() => {
     const beach = new Beach(canvasRef.current!, copyRef.current!)
     beachRef.current = beach
@@ -64,7 +63,7 @@ export function NotFoundPage() {
       <canvas
         ref={canvasRef}
         aria-hidden
-        className="pointer-events-none absolute inset-0 size-full text-foreground [image-rendering:pixelated]"
+        className="pointer-events-none absolute inset-0 size-full text-foreground"
       />
       <div className="relative z-10 flex min-h-svh flex-col px-6 pt-[14svh] sm:px-10 [@media(min-aspect-ratio:6/5)]:justify-center [@media(min-aspect-ratio:6/5)]:pt-0 [@media(min-aspect-ratio:6/5)]:pl-[7vw]">
         <div

@@ -1,28 +1,27 @@
 /**
  * The 404's beach: the opening dream of 8½, looking down past Guido's ankle
- * at the man on the beach who holds the rope. Three layers baked by
- * scripts/404/bake.py (the beach, the leg cut out, a blue-noise map) are
- * composed in continuous tone every frame, then dithered to one bit:
+ * at the man on the beach who holds the rope. Two layers baked by
+ * scripts/404/bake.py (the beach, and the leg cut out) are composed every
+ * frame on a grid of dots, and `Grain` (grain.ts) draws the result as film:
  *
  * - The leg swings a little from the knee, just off-frame, on slow detuned
  *   sines, so it never repeats and never jerks.
  * - The rope is drawn live, from the cuff (which swings) to the hand (which
  *   doesn't). Pulled, it straightens and the leg drifts towards the hand.
- * - The dither thresholds against a fixed blue-noise map, so whatever isn't
- *   moving never changes and whatever moves glides; error diffusion would
- *   shimmer across the whole frame.
  * - Going home, Guido falls (`fall()`), in one motion. The rope yanks, and
  *   from then on the beach only ever comes up faster: the yank gives the
  *   fall its speed, gravity adds to it. Meanwhile the beach spreads over the
  *   whole screen the way the homepage's paper does (left in landscape, up in
  *   portrait), the leg tips out of frame, and, as in the film, the dream
- *   ends: the dots thin out to bare page. That bare page is the frame the
+ *   ends: the picture thins out to bare page. That bare page is the frame the
  *   homepage starts on when it is arrived at, before its paper draws back.
  *
  * The frame is mirrored, so the leg hangs in from the right. It fades into
  * the page where the copy is: from the left in landscape, from the top in
  * portrait.
  */
+
+import { Grain } from "./grain"
 
 /** The baked frame's size, and points on it (mirrored). */
 const FRAME = { width: 1280, height: 688 }
@@ -35,9 +34,11 @@ const KNEE = [1420, 980] as const // off-frame: the leg swings from here
 /** The whole frame's grey range, leg included (printed by bake.py). */
 const LEVELS = [16, 202] as const
 
-/** CSS px per dot. */
-const DOT = 2
-const NOISE_SIZE = 128
+/**
+ * CSS px per dot: the grid the picture is composed on. Grain draws it at the
+ * screen's resolution, smoothly, so the dots never show.
+ */
+export const DOT = 2
 
 /** Matches the copy's layout switch in not-found-page.tsx. */
 export const LANDSCAPE_QUERY = "(min-aspect-ratio: 6/5)"
@@ -72,11 +73,30 @@ const FIELD_CELL = 6
 const EDGE_FEATHER = 70
 const EDGE_WANDER = 0.3
 
+/** The picture at one frame, ready to be drawn in any way. */
+export type Ink = {
+  /**
+   * 0–1 per dot, row by row: how much ink the picture wants there, before
+   * any fade. Ink is the page's foreground, so on dark this is how bright
+   * the picture is, and on light how dark.
+   */
+  tone: Float32Array
+  /** 0–1 per dot: how much of the picture shows there (0 is bare page). */
+  fade: Float32Array
+  /** In dots. */
+  width: number
+  height: number
+  dark: boolean
+  /** The ink's colour, RGB 0–255: the canvas's CSS colour. */
+  color: readonly [number, number, number]
+  /** s */
+  time: number
+}
+
 type Point = readonly [number, number]
 type Assets = {
   beach: HTMLImageElement
   leg: HTMLImageElement
-  noise: Float32Array
 }
 type Placement = {
   x: number
@@ -172,6 +192,14 @@ function fallPose(p: number) {
   }
 }
 
+/**
+ * The rope as the frame has it, in frame px and grey: from the cuff, where
+ * it is thick and bright, to the hand, where it is thin and dimmer.
+ */
+const ROPE = { width: [7, 2.8], grey: [208, 182] } as const
+/** Pieces the rope is drawn in, to taper it. */
+const ROPE_PIECES = 40
+
 /** Slow drift in -1..1: three detuned sines. */
 function drift(t: number, seed: number) {
   const f = 0.55
@@ -211,17 +239,7 @@ function loadAssets() {
   assets ??= Promise.all([
     loadImage("/404/beach.jpg"),
     loadImage("/404/leg.webp"),
-    loadImage("/404/blue-noise.png"),
-  ]).then(([beach, leg, noiseImage]) => {
-    const canvas = document.createElement("canvas")
-    canvas.width = canvas.height = NOISE_SIZE
-    const context = canvas.getContext("2d")!
-    context.drawImage(noiseImage, 0, 0)
-    const data = context.getImageData(0, 0, NOISE_SIZE, NOISE_SIZE).data
-    const noise = new Float32Array(NOISE_SIZE * NOISE_SIZE)
-    for (let i = 0; i < noise.length; i++) noise[i] = (data[i * 4] + 0.5) / 256
-    return { beach, leg, noise }
-  })
+  ]).then(([beach, leg]) => ({ beach, leg }))
   assets.catch(() => {
     assets = null
   })
@@ -367,7 +385,8 @@ export class Beach {
     width: number
     height: number
     context: CanvasRenderingContext2D
-    out: ImageData
+    tone: Float32Array
+    fade: Float32Array
   } | null = null
   /** The spread's front: worked out when the fall is first in the offing. */
   private field: Field | null = null
@@ -390,6 +409,7 @@ export class Beach {
   private last = 0
   private destroyed = false
   private readonly still: boolean
+  private readonly grain: Grain
   private readonly landscape: MediaQueryList
   private readonly resizeObserver: ResizeObserver
   private readonly themeObserver: MutationObserver
@@ -398,6 +418,7 @@ export class Beach {
     private readonly canvas: HTMLCanvasElement,
     private readonly copy: HTMLElement
   ) {
+    this.grain = new Grain(canvas)
     this.still = matchMedia("(prefers-reduced-motion: reduce)").matches
     this.landscape = matchMedia(LANDSCAPE_QUERY)
     this.resizeObserver = new ResizeObserver(() => this.resize())
@@ -440,6 +461,7 @@ export class Beach {
     cancelAnimationFrame(this.frame)
     this.resizeObserver.disconnect()
     this.themeObserver.disconnect()
+    this.grain.destroy()
   }
 
   private tick = (now: number) => {
@@ -480,14 +502,18 @@ export class Beach {
     if (!width || !height) return
     this.placement = place(box.width, box.height, local, this.landscape.matches)
     if (this.grid?.width !== width || this.grid.height !== height) {
-      this.canvas.width = width
-      this.canvas.height = height
       const scratch = document.createElement("canvas")
       scratch.width = width
       scratch.height = height
       const context = scratch.getContext("2d", { willReadFrequently: true })!
       context.imageSmoothingQuality = "high"
-      this.grid = { width, height, context, out: new ImageData(width, height) }
+      this.grid = {
+        width,
+        height,
+        context,
+        tone: new Float32Array(width * height),
+        fade: new Float32Array(width * height),
+      }
       this.field = null
     }
     this.draw(this.last)
@@ -505,6 +531,39 @@ export class Beach {
     this.dark = dark
     this.tone = toneCurve(dark)
     this.ink = resolveColor(getComputedStyle(this.canvas).color)
+  }
+
+  /** The rope, along a cubic Bézier in dots; `scale` is dots per frame px. */
+  private drawRope(curve: readonly Point[], scale: number) {
+    const context = this.grid!.context
+    context.setTransform(1, 0, 0, 1, 0, 0)
+    context.lineCap = "round"
+    // In pieces, each a little thinner and dimmer than the last, and a
+    // little uneven, as a twisted rope catches the light.
+    const at = (u: number): Point => {
+      const v = 1 - u
+      const [a, b, c, d] = curve
+      const k = [v * v * v, 3 * v * v * u, 3 * v * u * u, u * u * u]
+      return [
+        k[0] * a[0] + k[1] * b[0] + k[2] * c[0] + k[3] * d[0],
+        k[0] * a[1] + k[1] * b[1] + k[2] * c[1] + k[3] * d[1],
+      ]
+    }
+    let from = at(0)
+    for (let i = 1; i <= ROPE_PIECES; i++) {
+      const u = i / ROPE_PIECES
+      const to = at(u)
+      const grey = Math.round(
+        mix(ROPE.grey[0], ROPE.grey[1], u) + 7 * Math.sin(i * 2.3 + this.seed)
+      )
+      context.beginPath()
+      context.moveTo(...from)
+      context.lineTo(...to)
+      context.strokeStyle = `rgb(${grey}, ${grey}, ${grey})`
+      context.lineWidth = mix(ROPE.width[0], ROPE.width[1], u) * scale
+      context.stroke()
+      from = to
+    }
   }
 
   /** One frame at time `t`; `fallen` is how far Guido has fallen, if at all. */
@@ -600,19 +659,7 @@ export class Beach {
       )
     const b1 = bend(BEND1, 0.55, 1 / 3)
     const b2 = bend(BEND2, 0.15, 2 / 3)
-    const scale = Math.sqrt(beach.sx * legView.sx)
-    context.setTransform(1, 0, 0, 1, 0, 0)
-    context.lineCap = "round"
-    context.beginPath()
-    context.moveTo(...cuff)
-    context.bezierCurveTo(...b1, ...b2, ...hand)
-    // A pale rope with a soft shadow either side, enough to lift it off the sand.
-    context.strokeStyle = "rgb(88, 88, 88)"
-    context.lineWidth = (this.dark ? 7 : 8.5) * scale
-    context.stroke()
-    context.strokeStyle = "rgb(238, 238, 238)"
-    context.lineWidth = (this.dark ? 4.5 : 5) * scale
-    context.stroke()
+    this.drawRope([cuff, b1, b2, hand], Math.sqrt(beach.sx * legView.sx))
 
     context.setTransform(legView.sx, 0, 0, legView.sy, legView.x, legView.y)
     context.translate(KNEE[0] + dx, KNEE[1] + dy)
@@ -620,14 +667,12 @@ export class Beach {
     context.translate(-KNEE[0], -KNEE[1])
     context.drawImage(assets.leg, 0, 0)
 
-    // 2. One bit per dot, against the blue noise.
+    // 2. How much ink each dot wants, and how much of the picture shows.
     const source = context.getImageData(0, 0, width, height).data
-    const out = grid.out.data
-    const { tone, dark } = this
-    const { noise } = assets
+    const { tone } = this
+    const dark = this.dark === true
     const { columns, rows } = placement
     const veil = fall?.veil ?? 1
-    const [r, g, b] = this.ink
 
     // Falling, the frame spreads over the page behind the paper's front: it
     // sets out from where the frame starts to show at rest, for the far
@@ -656,14 +701,12 @@ export class Beach {
     const edged = edges > 0 && (left > -edgeReach || top > -edgeReach)
 
     for (let row = 0; row < height; row++) {
-      const noiseRow = (row % NOISE_SIZE) * NOISE_SIZE
       const rowFade = rows[row]
       const dy = Math.max(shownY - (row + 0.5) * DOT, 0)
       const cellRow = field ? ((row / perCell) | 0) * field.columns : 0
       const rowInset = row + 0.5 - top
       for (let column = 0; column < width; column++) {
         const i = row * width + column
-        const o = i * 4
         let fade = columns[column] * rowFade
         if (front >= 1) {
           fade = 1
@@ -690,20 +733,21 @@ export class Beach {
             fade *= 1 - (1 - soft) * edges
           }
         }
-        fade *= veil
-        const bright = tone[source[o]]
-        const value = dark ? bright * fade : 1 - (1 - bright) * fade
-        const lit = value > noise[noiseRow + (column % NOISE_SIZE)]
-        if (lit === dark) {
-          out[o] = r
-          out[o + 1] = g
-          out[o + 2] = b
-          out[o + 3] = 255
-        } else {
-          out[o + 3] = 0
-        }
+        const bright = tone[source[i * 4]]
+        grid.tone[i] = dark ? bright : 1 - bright
+        grid.fade[i] = fade * veil
       }
     }
-    this.canvas.getContext("2d")!.putImageData(grid.out, 0, 0)
+
+    // 3. As film.
+    this.grain.paint({
+      tone: grid.tone,
+      fade: grid.fade,
+      width,
+      height,
+      dark,
+      color: this.ink,
+      time: t,
+    })
   }
 }
