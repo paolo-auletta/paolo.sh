@@ -25,7 +25,7 @@ type Fill = {
 let fill: Fill = { from: 0, to: 0, start: 0, duration: 0 }
 
 /** Gentle at both ends, so the paper is still visibly moving near the end. */
-export const easeInOut = (x: number) => -(Math.cos(Math.PI * x) - 1) / 2
+const easeInOut = (x: number) => -(Math.cos(Math.PI * x) - 1) / 2
 
 /** How much of the screen the paper covers beyond its resting shape, 0–1. */
 export function paperFillAt(now: number) {

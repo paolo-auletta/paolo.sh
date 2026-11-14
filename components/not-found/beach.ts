@@ -11,10 +11,11 @@
  * - The dither thresholds against a fixed blue-noise map, so whatever isn't
  *   moving never changes and whatever moves glides; error diffusion would
  *   shimmer across the whole frame.
- * - Going home, Guido falls (`fall()`): the rope yanks, the frame spreads
- *   from beside the copy to the whole screen (left in landscape, up in
- *   portrait) as the beach rushes up at him and the leg tips out of frame,
- *   then, as in the film, the dream
+ * - Going home, Guido falls (`fall()`), in one motion. The rope yanks, and
+ *   from then on the beach only ever comes up faster: the yank gives the
+ *   fall its speed, gravity adds to it. Meanwhile the beach spreads over the
+ *   whole screen the way the homepage's paper does (left in landscape, up in
+ *   portrait), the leg tips out of frame, and, as in the film, the dream
  *   ends: the dots thin out to bare page. That bare page is the frame the
  *   homepage starts on when it is arrived at, before its paper draws back.
  *
@@ -22,8 +23,6 @@
  * the page where the copy is: from the left in landscape, from the top in
  * portrait.
  */
-
-import { easeInOut, LEAVE_MS } from "@/components/paper-fill"
 
 /** The baked frame's size, and points on it (mirrored). */
 const FRAME = { width: 1280, height: 688 }
@@ -47,15 +46,31 @@ const PULL_ZOOM = 1.28
 
 /** s: the whole fall, from the yank to bare page. */
 const FALL_S = 1.4
+/** Of the fall: the rope going taut. */
+const YANK = 0.1
+/** How many times nearer the beach is when the page goes bare. */
+const DIVE = 12
+/** How much of the way down the yank's speed alone would take Guido. */
+const PULL = 0.75
 /**
- * The part of the fall the beach takes to spread over the whole screen: as
- * long as the homepage's paper takes to spread over it when you leave.
+ * Of the fall: by when the beach has spread over the whole screen. The fall
+ * has grown it FILL_SCALE by then.
  */
-const SPREAD = LEAVE_MS / 1000 / FALL_S
-/** CSS px: the cells the spread's wandering front is worked out on. */
-const WANDER_CELL = 8
-/** CSS px: how soft the beach's own edges are while it grows. */
-const EDGE_FEATHER = 48
+const FILL_AT = 0.45
+
+// The spread is the homepage paper's (uFill in components/home/paper.ts): a
+// front that wanders in long tongues and shorter bays, thickening through
+// soft clumps across a wide band, never along a line. All CSS px.
+const FRONT_BAND = 260
+/** How far short of the frame's faded edge the front starts... */
+const FRONT_LEAD = 140
+/** ...and how far past the screen's far corner it ends. */
+const FRONT_PAD = 480
+/** The cells the front's wander and clumps are worked out on. */
+const FIELD_CELL = 6
+/** How soft the beach's own edges are while it grows, and how far they wander. */
+const EDGE_FEATHER = 70
+const EDGE_WANDER = 0.3
 
 type Point = readonly [number, number]
 type Assets = {
@@ -63,39 +78,34 @@ type Assets = {
   leg: HTMLImageElement
   noise: Float32Array
 }
-type Frame = {
+type Placement = {
   x: number
   y: number
   width: number
   height: number
   /** The hand, on screen: the zoom pulls in on it. */
   hand: Point
-}
-type Placement = Frame & {
   /**
-   * The frame filling the whole screen, the hand kept where it is if it can
-   * be: where the fall takes it. Landscape it spreads left over the copy's
-   * side; portrait, up over it.
+   * Where the hand ends up as Guido falls, once the beach has grown `grown`
+   * times: no farther than it must for the beach to fill the screen.
+   * Nowhere, in landscape; up, in portrait, where the beach at rest is a
+   * band along the bottom and grows up out of it.
    */
-  cover: Frame
+  dive: Point
+  grown: number
   /** 0 (page) to 1 (frame), per dot column and row. */
   columns: Float32Array
   rows: Float32Array
-  /**
-   * The spread: a front that sets out from where the frame is solid at rest
-   * and travels to the far corner, its edge wandering in long tongues and
-   * shorter bays (the homepage paper's front), softened over `band` px.
-   */
-  spread: {
-    /** The solid region's top-left corner, px: the front's distances run from it. */
-    from: Point
-    /** px from `from` to the screen's top-left corner. */
-    far: number
-    band: number
-    /** How far the front wanders either way, px, per WANDER_CELL cell. */
-    wander: Float32Array
-    columns: number
-  }
+  /** Where the frame starts to show at rest: the spread sets out from there. */
+  shown: Point
+}
+/** The spread's front, per FIELD_CELL cell. */
+type Field = {
+  /** px: how far the front runs ahead here, or lags. */
+  wander: Float32Array
+  /** 0–1: how soon the beach thickens here once the front arrives. */
+  clumps: Float32Array
+  columns: number
 }
 
 const smoothstep = (a: number, b: number, v: number) => {
@@ -111,29 +121,54 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 const clamp = (v: number, lo: number, hi: number) =>
   Math.min(hi, Math.max(lo, v))
 const mix = (a: number, b: number, t: number) => a + (b - a) * t
+/** Follows `u` up to a half, then eases in to rest on 1: never ahead of `u`. */
+const settle = (u: number) =>
+  u <= 0.5 ? Math.max(0, u) : u >= 1.5 ? 1 : 1 - (1.5 - u) ** 2 / 2
+
+/**
+ * How high Guido still is at `p` (0–1) of the fall: 1 at the yank, 1/DIVE
+ * when the page goes bare. The yank's speed comes on over YANK and gravity
+ * adds to it, so the beach, which grows as one over the height, comes up
+ * faster at every moment and never eases off.
+ */
+function heightAt(p: number) {
+  const pulled =
+    p < YANK ? p ** 3 / YANK ** 2 - p ** 4 / (2 * YANK ** 3) : p - YANK / 2
+  const gravity = 1 - 1 / DIVE - PULL * (1 - YANK / 2)
+  return 1 - PULL * pulled - gravity * p * p
+}
+
+/** How much the beach has grown by the time it must fill the screen. */
+const FILL_SCALE = 1 / heightAt(FILL_AT)
 
 /**
  * Where the fall is at `p` (0–1): the yank, the drop and the wake. Zooms are
  * multiples of the zoom the fall started from.
  */
 function fallPose(p: number) {
-  const yank = clamp01(p / 0.12)
-  const drop = clamp01((p - 0.08) / 0.92) ** 2.2 // gravity: slow, then fast
+  const yank = clamp01(p / YANK)
+  const height = heightAt(p)
+  const fallen = (1 - height) / (1 - 1 / DIVE)
+  // The leg leaves with the fall, a little behind it.
+  const tip = fallen ** 1.7
+  const t = p * FALL_S
   return {
-    // The beach spreads to fill the screen as the fall gets going: the frame
-    // grows first, the front that reveals it follows just behind.
-    grow: easeInOut(clamp01(p / (SPREAD * 0.85))),
-    front: easeInOut(clamp01((p - SPREAD * 0.1) / SPREAD)),
+    beachZoom: 1 / height,
+    // The spread's front moves with the fall: off at the yank, and faster
+    // all the way across, so it is the falling that opens the beach up.
+    front: clamp01((1 / height - 1) / (FILL_SCALE - 1)),
+    // The beach's edges soften as it starts to grow.
+    edges: smoothstep(0, YANK, p),
     // The leg jerks towards the hand, then tips up and out of frame.
     kick: 26 * (1 - (1 - yank) ** 3),
-    tipX: 260 * drop,
-    tipY: -520 * drop,
-    tilt: 0.16 * drop,
-    beachZoom: 1 + 7 * drop,
-    legZoom: 1 + 0.5 * drop,
-    shake: p < 0.16 ? 1 - p / 0.16 : 0,
+    tipX: 260 * tip,
+    tipY: -520 * tip,
+    tilt: 0.16 * tip,
+    legZoom: 1 + 0.5 * tip,
+    // The rope's jolt: one tug along the rope that rings out, px.
+    jolt: 5 * Math.exp(-t / 0.09) * Math.sin(t * 2 * Math.PI * 11),
     // What is left of the frame: it thins out to bare page at the end.
-    veil: 1 - smoothstep(0.6, 0.98, p),
+    veil: 1 - smoothstep(0.64, 1, p),
   }
 }
 
@@ -281,59 +316,48 @@ function place(
     x + (w * HAND[0]) / FRAME.width,
     y + (h * HAND[1]) / FRAME.height,
   ]
-  // Where the frame is solid at rest; the spread sets out from there. Its
-  // front wanders by about a third of the way it has to go.
-  const from: Point = [
-    Math.max(0, landscape ? fadeX[1] : 0, x + w * 0.12),
-    y > 1 ? fadeY[1] : 0,
+  // By FILL_AT the fall has grown the beach FILL_SCALE. If that would not
+  // cover the screen from where the hand is, the hand moves as the beach
+  // grows (see `draw`), and the screen is full once it has grown enough.
+  const grown = Math.max(FILL_SCALE, width / w, height / h)
+  const fx = HAND[0] / FRAME.width
+  const fy = HAND[1] / FRAME.height
+  const dive: Point = [
+    clamp(hand[0], width - w * grown * (1 - fx), w * grown * fx),
+    clamp(hand[1], height - h * grown * (1 - fy), h * grown * fy),
   ]
-  const far = Math.hypot(from[0], from[1])
-  const amplitude = clamp(far * 0.8, 180, 360)
-  const wanderColumns = Math.ceil(width / WANDER_CELL) + 1
-  const wanderRows = Math.ceil(height / WANDER_CELL) + 1
-  const wander = new Float32Array(wanderColumns * wanderRows)
-  for (let row = 0; row < wanderRows; row++) {
-    for (let column = 0; column < wanderColumns; column++) {
-      const px = column * WANDER_CELL
-      const py = row * WANDER_CELL
-      wander[row * wanderColumns + column] =
-        (fbm(px * 0.0028 + 21, py * 0.0028 + 21) -
-          0.5 +
-          (fbm(px * 0.009 + 33, py * 0.009 + 33) - 0.5) * 0.37) *
-        amplitude
-    }
-  }
-
-  const cw = Math.max(w, width, height * aspect)
-  const ch = cw / aspect
-  const cx = clamp(hand[0] - (cw * HAND[0]) / FRAME.width, width - cw, 0)
-  const cy = clamp(hand[1] - (ch * HAND[1]) / FRAME.height, height - ch, 0)
   return {
     x,
     y,
     width: w,
     height: h,
     hand,
-    cover: {
-      x: cx,
-      y: cy,
-      width: cw,
-      height: ch,
-      hand: [
-        cx + (cw * HAND[0]) / FRAME.width,
-        cy + (ch * HAND[1]) / FRAME.height,
-      ],
-    },
+    dive,
+    grown,
     columns,
     rows,
-    spread: {
-      from,
-      far: far + amplitude * 0.5,
-      band: clamp(far * 0.2, 60, 180),
-      wander,
-      columns: wanderColumns,
-    },
+    shown: [Math.max(0, landscape ? fadeX[0] : 0, x), y > 1 ? fadeY[0] : 0],
   }
+}
+
+/** The spread's front for a screen this size: the homepage paper's noise. */
+function frontField(width: number, height: number): Field {
+  const columns = Math.ceil(width / FIELD_CELL) + 1
+  const rows = Math.ceil(height / FIELD_CELL) + 1
+  const wander = new Float32Array(columns * rows)
+  const clumps = new Float32Array(columns * rows)
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) {
+      const px = column * FIELD_CELL
+      const py = row * FIELD_CELL
+      const i = row * columns + column
+      wander[i] =
+        (fbm(px * 0.0028 + 21, py * 0.0028 + 21) - 0.5) * 300 +
+        (fbm(px * 0.009 + 33, py * 0.009 + 33) - 0.5) * 110
+      clumps[i] = fbm(px * 0.006 + 40, py * 0.006 + 40)
+    }
+  }
+  return { wander, clumps, columns }
 }
 
 export class Beach {
@@ -345,6 +369,8 @@ export class Beach {
     context: CanvasRenderingContext2D
     out: ImageData
   } | null = null
+  /** The spread's front: worked out when the fall is first in the offing. */
+  private field: Field | null = null
   private tone = toneCurve(false)
   private ink: [number, number, number] = [0, 0, 0]
   private dark: boolean | null = null
@@ -392,6 +418,7 @@ export class Beach {
 
   /** The link is hovered or focused: the man reels you in. */
   setPull(on: boolean) {
+    if (on) this.frontField()
     this.pullTarget = on ? 1 : 0
     this.zoomTarget = on ? PULL_ZOOM : 1
   }
@@ -461,8 +488,15 @@ export class Beach {
       const context = scratch.getContext("2d", { willReadFrequently: true })!
       context.imageSmoothingQuality = "high"
       this.grid = { width, height, context, out: new ImageData(width, height) }
+      this.field = null
     }
     this.draw(this.last)
+  }
+
+  private frontField() {
+    if (!this.grid || this.still) return null
+    this.field ??= frontField(this.grid.width * DOT, this.grid.height * DOT)
+    return this.field
   }
 
   private syncTheme() {
@@ -482,31 +516,40 @@ export class Beach {
     const fall = fallen === undefined ? null : fallPose(fallen)
     const pull = fall ? 1 : this.pull
 
-    // Falling, the frame grows from its place beside the copy to the whole
-    // screen, and a wandering front reveals it as it goes (see the dither).
-    const grow = fall?.grow ?? 0
-    const { cover } = placement
-    const frame: Frame = {
-      x: mix(placement.x, cover.x, grow),
-      y: mix(placement.y, cover.y, grow),
-      width: mix(placement.width, cover.width, grow),
-      height: mix(placement.height, cover.height, grow),
-      hand: lerp(placement.hand, cover.hand, grow),
-    }
-
-    // Frame coordinates to dots, zoomed `k` about the hand. Falling, the beach
-    // rushes up much faster than the leg, which stays with Guido.
-    const [hx, hy] = frame.hand
-    const shakeX = fall ? (Math.random() - 0.5) * 6 * fall.shake : 0
-    const shakeY = fall ? (Math.random() - 0.5) * 6 * fall.shake : 0
-    const frameToDots = (k: number) => ({
-      x: (hx + (frame.x - hx) * k) / DOT + shakeX,
-      y: (hy + (frame.y - hy) * k) / DOT + shakeY,
-      sx: (frame.width * k) / FRAME.width / DOT,
-      sy: (frame.height * k) / FRAME.height / DOT,
-    })
+    // Frame coordinates to dots, zoomed `k` about the hand. Falling, the
+    // beach rushes up much faster than the leg, which stays with Guido, and
+    // the rope's jolt runs through both. The hand moves to where the beach
+    // can fill the screen, in step with how much the beach has grown: the
+    // edges that bleed off the screen at rest (the bottom, in portrait)
+    // never come into it, so the beach grows out of them, then the hand
+    // eases to a stop and the fall closes in on it.
     const zoom = fall ? this.falling!.zoom : this.zoom
+    const [hx, hy] = placement.hand
+    const [ax, ay] = fall
+      ? lerp(
+          placement.hand,
+          placement.dive,
+          settle(
+            (fall.beachZoom - 1) / Math.max(placement.grown / zoom - 1, 0.05)
+          )
+        )
+      : placement.hand
+    const along = Math.hypot(CUFF[0] - HAND[0], CUFF[1] - HAND[1])
+    const joltX = ((fall?.jolt ?? 0) * (CUFF[0] - HAND[0])) / along / DOT
+    const joltY = ((fall?.jolt ?? 0) * (CUFF[1] - HAND[1])) / along / DOT
+    const frameToDots = (k: number) => ({
+      x: (ax + (placement.x - hx) * k) / DOT + joltX,
+      y: (ay + (placement.y - hy) * k) / DOT + joltY,
+      sx: (placement.width * k) / FRAME.width / DOT,
+      sy: (placement.height * k) / FRAME.height / DOT,
+    })
     const beach = frameToDots(zoom * (fall?.beachZoom ?? 1))
+    if (fall) {
+      // The beach bleeds off the right and bottom at rest; the jolt must not
+      // pull those edges into view.
+      beach.x = Math.max(beach.x, width - FRAME.width * beach.sx)
+      beach.y = Math.max(beach.y, height - FRAME.height * beach.sy)
+    }
     const legView = frameToDots(zoom * (fall?.legZoom ?? 1))
     const dots = (m: typeof beach, [px, py]: Point): Point => [
       m.x + px * m.sx,
@@ -586,50 +629,66 @@ export class Beach {
     const veil = fall?.veil ?? 1
     const [r, g, b] = this.ink
 
-    // The spread's front, in dots: how far it has got, and how soft it is.
-    const spread = placement.spread
+    // Falling, the frame spreads over the page behind the paper's front: it
+    // sets out from where the frame starts to show at rest, for the far
+    // corner, so the faded edge thickens first and the rest follows.
+    const field = fall ? this.frontField() : null
     const front = fall?.front ?? 0
-    const reach = mix(-spread.band, spread.far + spread.band, front) / DOT
-    const band = spread.band / DOT
-    const [fromX, fromY] = [spread.from[0] / DOT, spread.from[1] / DOT]
-    const perCell = WANDER_CELL / DOT
+    const spreading = field !== null && front > 0 && front < 1
+    const [shownX, shownY] = placement.shown
+    const reach = mix(
+      -FRONT_LEAD,
+      Math.hypot(shownX, shownY) + FRONT_PAD,
+      front
+    )
+    // The front sets out straight, and takes up its wander as it goes.
+    const wandering = smoothstep(0, 0.25, front)
+    const perCell = FIELD_CELL / DOT
 
-    // While it grows, the beach's own edges stay soft wherever they are on
-    // screen, so the picture never ends in a line.
-    const feather = EDGE_FEATHER / DOT
+    // While the beach grows to fill the screen, the edges it has on screen
+    // (the left and the top; it bleeds off the others) are soft and wander
+    // too, so the picture never ends in a line.
+    const edges = field !== null && fall ? fall.edges : 0
     const left = beach.x
     const top = beach.y
-    const right = beach.x + FRAME.width * beach.sx
-    const bottom = beach.y + FRAME.height * beach.sy
-    const edges = fall !== null
+    // dots: past this an edge is out of sight, wander and all.
+    const edgeReach = (EDGE_FEATHER + 205 * EDGE_WANDER) / DOT
+    const edged = edges > 0 && (left > -edgeReach || top > -edgeReach)
 
     for (let row = 0; row < height; row++) {
       const noiseRow = (row % NOISE_SIZE) * NOISE_SIZE
       const rowFade = rows[row]
-      const dy = Math.max(fromY - row - 0.5, 0)
-      const wanderRow = ((row / perCell) | 0) * spread.columns
-      let rowEdge = Infinity
-      if (edges) {
-        if (top > 0) rowEdge = row + 0.5 - top
-        if (bottom < height) rowEdge = Math.min(rowEdge, bottom - row - 0.5)
-      }
+      const dy = Math.max(shownY - (row + 0.5) * DOT, 0)
+      const cellRow = field ? ((row / perCell) | 0) * field.columns : 0
+      const rowInset = row + 0.5 - top
       for (let column = 0; column < width; column++) {
         const i = row * width + column
         const o = i * 4
         let fade = columns[column] * rowFade
-        if (front > 0) {
-          const dx = Math.max(fromX - column - 0.5, 0)
+        if (front >= 1) {
+          fade = 1
+        } else if (spreading) {
+          const cell = cellRow + ((column / perCell) | 0)
+          const dx = Math.max(shownX - (column + 0.5) * DOT, 0)
           const ahead =
             reach -
             Math.sqrt(dx * dx + dy * dy) +
-            spread.wander[wanderRow + ((column / perCell) | 0)] / DOT
-          fade = Math.max(fade, smoothstep(-band, band, ahead))
+            field.wander[cell] * wandering
+          const density = smoothstep(-FRONT_BAND, FRONT_BAND, ahead) * 1.6 - 0.3
+          const clump = field.clumps[cell]
+          fade = Math.max(fade, smoothstep(clump - 0.3, clump + 0.3, density))
         }
-        if (edges) {
-          let inside = rowEdge
-          if (left > 0) inside = Math.min(inside, column + 0.5 - left)
-          if (right < width) inside = Math.min(inside, right - column - 0.5)
-          if (inside < feather) fade *= smoothstep(0, feather, inside)
+        if (edged && field) {
+          const inside = Math.min(rowInset, column + 0.5 - left)
+          if (inside < edgeReach) {
+            const wander = field.wander[cellRow + ((column / perCell) | 0)]
+            const soft = smoothstep(
+              0,
+              EDGE_FEATHER,
+              inside * DOT + wander * EDGE_WANDER
+            )
+            fade *= 1 - (1 - soft) * edges
+          }
         }
         fade *= veil
         const bright = tone[source[o]]
