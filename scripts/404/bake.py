@@ -44,6 +44,12 @@ ROPE = [
 ]
 # Px of the outline's points are worked to: 1/8.
 SUBPIXEL = 3
+# Below this row the only bright thing on the leg is the rope wrapped round
+# the cuff. The page draws the rest of the rope shaded, in the sun but not
+# glaring (components/not-found/beach.ts); the wrapped part is brought down
+# to match: (grey from which it is softened, by how much).
+WRAP_TOP = 285
+WRAP_SOFTEN = (150, 0.6)
 
 
 def disc(n):
@@ -117,10 +123,16 @@ def cut_leg(frame):
 
 def leg_colours(frame, matte):
     """The frame under the leg, with its edge's px carried on from inside, so
-    the sand they half show doesn't swing with the leg as a pale fringe."""
+    the sand they half show doesn't swing with the leg as a pale fringe; and
+    the rope wrapped round the cuff a little less bright."""
     solid = matte >= 250
     fringe = (cv2.dilate((matte > 0).astype(np.uint8), disc(5)) > 0) & ~solid
-    return cv2.inpaint(frame, fringe.astype(np.uint8) * 255, 3, cv2.INPAINT_TELEA)
+    colours = cv2.inpaint(frame, fringe.astype(np.uint8) * 255, 3, cv2.INPAINT_TELEA)
+    knee, keep = WRAP_SOFTEN
+    wrap = colours[WRAP_TOP:].astype(np.float32)
+    wrap = np.where(wrap > knee, knee + (wrap - knee) * keep, wrap)
+    colours[WRAP_TOP:] = wrap.round().astype(np.uint8)
+    return colours
 
 
 def paint_out(frame, matte):

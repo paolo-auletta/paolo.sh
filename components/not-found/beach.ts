@@ -193,12 +193,26 @@ function fallPose(p: number) {
 }
 
 /**
- * The rope as the frame has it, in frame px and grey: from the cuff, where
- * it is thick and bright, to the hand, where it is thin and dimmer.
+ * The rope as the frame has it, in frame px and grey, from the cuff, where
+ * it is near and thick, to the hand, where it is far and thin. It is round:
+ * lit on the side the sun is on, in shade on the other.
  */
-const ROPE = { width: [7, 2.8], grey: [208, 182] } as const
-/** Pieces the rope is drawn in, to taper it. */
-const ROPE_PIECES = 40
+const ROPE = {
+  width: [7, 2.8],
+  lit: [198, 184],
+  shade: [170, 158],
+} as const
+/**
+ * Towards the sun, on screen: the upper left, as the shadows on the sand
+ * fall to the lower right and the shoe is lit on its left.
+ */
+const SUN = [-0.6, -0.8] as const
+/** Of the rope's length from the cuff: how far the turn-up shades it. */
+const UNDER_CUFF = 0.12
+/** Frame px along the rope per twist, per frame px of its width. */
+const TWIST = 1.6
+/** Pieces the rope is drawn in, to taper and shade it along its length. */
+const ROPE_PIECES = 160
 
 /** Slow drift in -1..1: three detuned sines. */
 function drift(t: number, seed: number) {
@@ -538,8 +552,6 @@ export class Beach {
     const context = this.grid!.context
     context.setTransform(1, 0, 0, 1, 0, 0)
     context.lineCap = "round"
-    // In pieces, each a little thinner and dimmer than the last, and a
-    // little uneven, as a twisted rope catches the light.
     const at = (u: number): Point => {
       const v = 1 - u
       const [a, b, c, d] = curve
@@ -549,20 +561,71 @@ export class Beach {
         k[0] * a[1] + k[1] * b[1] + k[2] * c[1] + k[3] * d[1],
       ]
     }
+    const grey = (v: number) => {
+      const g = Math.round(clamp(v, 0, 255))
+      return `rgb(${g}, ${g}, ${g})`
+    }
+
+    // In pieces, each a little farther off: thinner, and dimmer.
+    const pieces: {
+      from: Point
+      to: Point
+      width: number
+      shade: number
+      lit: number
+      sunward: Point
+    }[] = []
     let from = at(0)
+    let twist = this.seed
     for (let i = 1; i <= ROPE_PIECES; i++) {
-      const u = i / ROPE_PIECES
-      const to = at(u)
-      const grey = Math.round(
-        mix(ROPE.grey[0], ROPE.grey[1], u) + 7 * Math.sin(i * 2.3 + this.seed)
-      )
-      context.beginPath()
-      context.moveTo(...from)
-      context.lineTo(...to)
-      context.strokeStyle = `rgb(${grey}, ${grey}, ${grey})`
-      context.lineWidth = mix(ROPE.width[0], ROPE.width[1], u) * scale
-      context.stroke()
+      const u = (i - 0.5) / ROPE_PIECES
+      const to = at(i / ROPE_PIECES)
+      const width = mix(ROPE.width[0], ROPE.width[1], u)
+      const length = Math.hypot(to[0] - from[0], to[1] - from[1])
+      // The side facing the sun, across the rope.
+      let nx = -(to[1] - from[1]) / (length || 1)
+      let ny = (to[0] - from[0]) / (length || 1)
+      if (nx * SUN[0] + ny * SUN[1] < 0) [nx, ny] = [-nx, -ny]
+      // Out from under the turn-up, the rope comes into the light.
+      const cuff = mix(0.72, 1, smoothstep(0, UNDER_CUFF, u))
+      // The twist catches the light strand by strand, where it is wide
+      // enough to see.
+      twist += length / scale / (width * TWIST)
+      const strands =
+        1 +
+        0.1 *
+          Math.sin(twist * 2 * Math.PI) *
+          smoothstep(1.5, 3.5, width * scale)
+      pieces.push({
+        from,
+        to,
+        width: width * scale,
+        shade: mix(ROPE.shade[0], ROPE.shade[1], u) * cuff,
+        lit: mix(ROPE.lit[0], ROPE.lit[1], u) * cuff * strands,
+        sunward: [nx, ny],
+      })
       from = to
+    }
+
+    // The whole rope in shade, then its lit side over it, so no piece's
+    // shade covers the light on the last.
+    for (const piece of pieces) {
+      context.beginPath()
+      context.moveTo(...piece.from)
+      context.lineTo(...piece.to)
+      context.strokeStyle = grey(piece.shade)
+      context.lineWidth = piece.width
+      context.stroke()
+    }
+    for (const { from, to, width, lit, sunward } of pieces) {
+      const ox = sunward[0] * width * 0.2
+      const oy = sunward[1] * width * 0.2
+      context.beginPath()
+      context.moveTo(from[0] + ox, from[1] + oy)
+      context.lineTo(to[0] + ox, to[1] + oy)
+      context.strokeStyle = grey(lit)
+      context.lineWidth = width * 0.6
+      context.stroke()
     }
   }
 
