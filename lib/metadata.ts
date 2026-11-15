@@ -127,25 +127,10 @@ export const rootMetadata: Metadata = {
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
-  // The homepage's two characters: the seaplane by day, the Giant by night.
-  // These follow the browser's light or dark setting, not the site's own
-  // toggle (an icon can't see that); Safari ignores `media` and takes the
-  // first. /favicon.ico (the seaplane) is there for crawlers that ask for it.
+  // The homepage portrait, squared. /favicon.ico is the same image for
+  // crawlers that ask for it.
   icons: {
-    icon: [
-      {
-        url: "/icons/plane.png",
-        type: "image/png",
-        sizes: "64x64",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        url: "/icons/giant.png",
-        type: "image/png",
-        sizes: "64x64",
-        media: "(prefers-color-scheme: dark)",
-      },
-    ],
+    icon: [{ url: "/icons/pfp.png", type: "image/png", sizes: "64x64" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
   ...shareCards(SITE_NAME, SITE_DESCRIPTION, "/", SKIES[CARD]),
